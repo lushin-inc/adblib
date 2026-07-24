@@ -347,7 +347,7 @@ function backFromDetail(){document.getElementById('detail').classList.add('hidde
 function syncCard(f){const c=cards.find(c=>c._b.f===f);if(c)paintCard(c);}
 
 /* ---------- rate (swipe deck) ---------- */
-let ri=0,lastSwiped=null;
+let ri=0,history=[];
 function ratedCount(){return BOOKS.filter(b=>getR(b.f)).length}
 function firstUnrated(){for(let i=0;i<BOOKS.length;i++)if(!getR(BOOKS[i].f))return i;return -1}
 function nextUnrated(i){for(let j=i+1;j<BOOKS.length;j++)if(!getR(BOOKS[j].f))return j;for(let j=0;j<=i;j++)if(!getR(BOOKS[j].f))return j;return -1;}
@@ -374,13 +374,13 @@ function renderRater(){closeNote();
   const nf=document.getElementById('rnoteflag'),note=getN(b.f);if(note){nf.style.display='block';nf.textContent='\U0001F4DD '+note}else nf.style.display='none';
 }
 function resetCard(){const c=document.getElementById('scard');c.style.transition='none';c.style.transform='';c.style.opacity='1';document.getElementById('stampLike').style.opacity=0;document.getElementById('stampNope').style.opacity=0;}
-function applyAction(b,act){ratings[b.f]=ratings[b.f]||{};if(act==='pass'){ratings[b.f].r=1;delete ratings[b.f].p;}else if(act==='like'){ratings[b.f].r=5;delete ratings[b.f].p;}else if(act==='super'){ratings[b.f].r=5;ratings[b.f].p=1;}if(!ratings[b.f].r&&!ratings[b.f].note&&!ratings[b.f].p)delete ratings[b.f];save();syncCard(b.f);}
-function advance(){lastSwiped=ri;const nx=nextUnrated(ri);ri=(nx!==-1)?nx:BOOKS.length;renderRater();}
+function applyAction(b,act){history.push({i:ri,f:b.f,prev:ratings[b.f]?JSON.parse(JSON.stringify(ratings[b.f])):null});ratings[b.f]=ratings[b.f]||{};if(act==='pass'){ratings[b.f].r=1;delete ratings[b.f].p;}else if(act==='like'){ratings[b.f].r=5;delete ratings[b.f].p;}else if(act==='super'){ratings[b.f].r=5;ratings[b.f].p=1;}if(!ratings[b.f].r&&!ratings[b.f].note&&!ratings[b.f].p)delete ratings[b.f];save();syncCard(b.f);}
+function advance(){const nx=nextUnrated(ri);ri=(nx!==-1)?nx:BOOKS.length;renderRater();}
 function applyRating(dir){applyAction(BOOKS[ri],dir>0?'like':'pass');advance();}
 function applySuper(){applyAction(BOOKS[ri],'super');advance();}
 function flingAndRate(dir){if(ri<0||ri>=BOOKS.length)return;const c=document.getElementById('scard');c.style.transition='transform .26s ease, opacity .26s ease';c.style.transform=`translate(${dir*700}px,0) rotate(${dir*20}deg)`;c.style.opacity='0';(dir>0?document.getElementById('stampLike'):document.getElementById('stampNope')).style.opacity=1;setTimeout(()=>applyRating(dir),230);}
 function flingUp(){if(ri<0||ri>=BOOKS.length)return;const c=document.getElementById('scard');c.style.transition='transform .28s ease, opacity .28s ease';c.style.transform='translate(0,-820px)';c.style.opacity='0';document.getElementById('stampNow').style.opacity=1;setTimeout(applySuper,240);}
-function undoSwipe(){if(lastSwiped==null)return;ri=lastSwiped;lastSwiped=null;renderRater();}
+function undoSwipe(){if(!history.length)return;const h=history.pop();if(h.prev)ratings[h.f]=h.prev;else delete ratings[h.f];save();ri=h.i;renderRater();syncCard(h.f);}
 (function(){
   const c=document.getElementById('scard');let sx=0,sy=0,dragging=false,dx=0,dy=0;
   const like=document.getElementById('stampLike'),nope=document.getElementById('stampNope'),now=document.getElementById('stampNow');
