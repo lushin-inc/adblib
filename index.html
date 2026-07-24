@@ -42,6 +42,8 @@ a.cover:hover{transform:translateY(-3px)}
 .rt i.f{color:var(--star)}
 .ndot{position:absolute;top:6px;right:6px;font-size:11px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;display:none;}
 .has-note .ndot{display:block}
+.pdot{position:absolute;top:6px;left:6px;font-size:11px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;display:none;}
+.card.pri .pdot{display:block}
 .bt{font-size:11.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .ba{font-size:10.5px;color:var(--muted);margin-top:1px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
 .ba.lnk{cursor:pointer;}.ba.lnk:hover{color:var(--accent);}
@@ -111,15 +113,16 @@ a.cover:hover{transform:translateY(-3px)}
 .dstars i{cursor:pointer;font-style:normal;font-size:30px;line-height:1;color:rgba(150,150,160,.45);}
 .dstars i.f{color:var(--star);}
 .swipearea{position:relative;max-width:360px;margin:0 auto;}
-.scard{position:relative;touch-action:pan-y;-webkit-user-select:none;user-select:none;cursor:grab;will-change:transform;}
+.scard{position:relative;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab;will-change:transform;}
 .scard:active{cursor:grabbing;}
 .scard img{-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none;}
 .stamp{position:absolute;top:20px;z-index:6;font-size:28px;font-weight:900;letter-spacing:2px;padding:5px 13px;border:4px solid;border-radius:10px;opacity:0;pointer-events:none;text-transform:uppercase;}
 .stamp.like{left:16px;color:var(--r5);border-color:var(--r5);transform:rotate(-15deg);}
 .stamp.nope{right:16px;color:var(--r1);border-color:var(--r1);transform:rotate(15deg);}
+.stamp.now{left:50%;top:12px;transform:translateX(-50%);color:var(--star);border-color:var(--star);}
 .swipebtns{display:flex;justify-content:center;align-items:center;gap:16px;padding:14px 0 2px;}
 .sbtn{width:58px;height:58px;border-radius:50%;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);color:var(--text);}
-.sbtn.like{color:var(--r5);font-size:26px;}.sbtn.nope{color:var(--r1);}
+.sbtn.like{color:var(--r5);font-size:26px;}.sbtn.nope{color:var(--r1);}.sbtn.now{color:var(--star);}
 .sbtn.undo,.sbtn.note{width:46px;height:46px;font-size:16px;color:var(--muted);}
 .sbtn:active{transform:scale(.9);}
 .hidden{display:none!important}
@@ -142,6 +145,7 @@ a.cover:hover{transform:translateY(-3px)}
     <div class="chips" id="chips">
       <div class="chip on" data-f="all">All <b id="c-all"></b></div>
       <div class="chip" data-f="queue">⭐ Queue <b id="c-queue"></b></div>
+      <div class="chip" data-f="now">🔥 Now <b id="c-now"></b></div>
       <div class="chip" data-f="rated">Rated <b id="c-rated"></b></div>
       <div class="chip" data-f="unrated">Unrated <b id="c-unrated"></b></div>
       <div class="chip" data-f="note">📝 Notes <b id="c-note"></b></div>
@@ -180,6 +184,7 @@ a.cover:hover{transform:translateY(-3px)}
     <div class="rcard scard" id="scard">
       <div class="stamp like" id="stampLike">LIKE</div>
       <div class="stamp nope" id="stampNope">NOPE</div>
+      <div class="stamp now" id="stampNow">NOW</div>
       <div class="rcover" id="rcover"><span id="rcoverT"></span></div>
       <div class="rinfo"><div class="rname" id="rname"></div><div class="rauth" id="rauth"></div><div class="rlink" id="rlink"></div></div>
       <div class="rnoteflag" id="rnoteflag"></div>
@@ -189,10 +194,11 @@ a.cover:hover{transform:translateY(-3px)}
     <button class="sbtn nope" onclick="flingAndRate(-1)" title="Pass (left arrow)">✕</button>
     <button class="sbtn undo" onclick="undoSwipe()" title="Undo (Z)">↩</button>
     <button class="sbtn note" onclick="startNote()" title="Note (N)">📝</button>
+    <button class="sbtn now" onclick="flingUp()" title="Now / priority (up arrow)">⭐</button>
     <button class="sbtn like" onclick="flingAndRate(1)" title="Like (right arrow)">♥</button>
   </div>
   <div class="rinput" id="rinput" style="max-width:400px;margin:8px auto 0"><input id="rin" placeholder='Add a note...'><div class="tip">Enter to save · Esc to cancel</div></div>
-  <div class="rhint">Swipe the card · ← pass · like → · N note · Z undo</div>
+  <div class="rhint">Swipe · ← pass · like → · ↑ Now · N note · Z undo</div>
   <div class="done" id="done"><h1>🎧 All done</h1><p>You've been through every book.</p><p>Hit Export and send me the file — I'll pull download links for your likes.</p>
     <div class="dstats" id="dstats"></div><button class="dbtn" id="expBtn2">Export ratings</button><button class="dbtn ghost" onclick="jumpTo(0)">Start over from #1</button></div>
 </div>
@@ -206,6 +212,8 @@ let ratings={};try{ratings=JSON.parse(store.get('ablib')||'{}')||{}}catch(e){rat
 function save(){store.set('ablib',JSON.stringify(ratings))}
 function getR(f){return (ratings[f]&&ratings[f].r)||0}
 function getN(f){return (ratings[f]&&ratings[f].note)||''}
+function getP(f){return !!(ratings[f]&&ratings[f].p)}
+(function(){let ch=false;for(const k in ratings){const o=ratings[k];if(o&&typeof o.note==='string'&&o.note.trim().toLowerCase()==='now'){o.p=1;delete o.note;ch=true;}}if(ch)save();})();
 const moon='<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>',sun='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>';
 function applyTheme(t){document.documentElement.dataset.theme=t;document.getElementById('ic').innerHTML=(t==='dark'?moon:sun);store.set('ablib_theme',t)}
 applyTheme(store.get('ablib_theme')||'dark');
@@ -245,7 +253,7 @@ function makeCard(b){const card=document.createElement('div');card.className='ca
   const inner=coverHTML(b);
   const cov=`<div class="cover${(b.d||b.c)?'':' ph'}" ${(b.d||b.c)?'':`style="background:${grad(b.t)}"`}>${inner}</div>`;
   const auth=b.a||'',fa=splitAuthors(auth)[0]||'';
-  card.innerHTML=`<div class="cw">${cov}<div class="ndot">📝</div><div class="rt"></div></div><div class="meta"><div class="bt">${esc(b.t)}</div><div class="ba${fa?' lnk':''}">${esc(auth)}</div></div>`;
+  card.innerHTML=`<div class="cw">${cov}<div class="ndot">📝</div><div class="pdot">🔥</div><div class="rt"></div></div><div class="meta"><div class="bt">${esc(b.t)}</div><div class="ba${fa?' lnk':''}">${esc(auth)}</div></div>`;
   const rt=card.querySelector('.rt');let st='';for(let i=1;i<=5;i++)st+=`<i data-v="${i}">★</i>`;rt.innerHTML=st;
   rt.addEventListener('click',e=>{const s=e.target.closest('i');if(!s)return;e.preventDefault();const v=+s.dataset.v;setRating(b.f,getR(b.f)===v?0:v);paintCard(card);counts();if(filter!=='all')applyFilter();});
   if(fa)card.querySelector('.ba').addEventListener('click',()=>openAuthor(fa));
@@ -258,17 +266,17 @@ let filter='all',cards=[];
 function build(){const grid=document.getElementById('grid'),frag=document.createDocumentFragment();
   BOOKS.forEach(b=>{const c=makeCard(b);frag.appendChild(c);cards.push(c);});
   grid.appendChild(frag);counts();applyFilter();}
-function paintCard(card){const b=card._b,r=getR(b.f);card.querySelectorAll('.rt i').forEach(i=>i.classList.toggle('f',+i.dataset.v<=r));card.classList.toggle('has-note',!!getN(b.f));}
+function paintCard(card){const b=card._b,r=getR(b.f);card.querySelectorAll('.rt i').forEach(i=>i.classList.toggle('f',+i.dataset.v<=r));card.classList.toggle('has-note',!!getN(b.f));card.classList.toggle('pri',getP(b.f));}
 function refreshBrowseStars(){cards.forEach(paintCard);counts();}
 function setRating(f,v){ratings[f]=ratings[f]||{};if(v===0)delete ratings[f].r;else ratings[f].r=v;if(!ratings[f].r&&!ratings[f].note)delete ratings[f];save();}
-function counts(){let q=0,rt=0,nt=0;BOOKS.forEach(b=>{const r=getR(b.f);if(r>0){rt++;if(r>=4)q++}if(getN(b.f))nt++});
-  set('c-all',BOOKS.length);set('c-queue',q);set('c-rated',rt);set('c-unrated',BOOKS.length-rt);set('c-note',nt);}
+function counts(){let q=0,rt=0,nt=0,nw=0;BOOKS.forEach(b=>{const r=getR(b.f);if(r>0){rt++;if(r>=4)q++}if(getN(b.f))nt++;if(getP(b.f))nw++;});
+  set('c-all',BOOKS.length);set('c-queue',q);set('c-now',nw);set('c-rated',rt);set('c-unrated',BOOKS.length-rt);set('c-note',nt);}
 function set(id,v){document.getElementById(id).textContent=v}
 document.getElementById('chips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;filter=c.dataset.f;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c));applyFilter();});
 let tmr;document.getElementById('q').addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(applyFilter,110)});
 function applyFilter(){const query=norm(document.getElementById('q').value.trim());let vis=0;
   for(const c of cards){const r=getR(c._b.f),hn=!!getN(c._b.f);
-    let okF=filter==='all'||(filter==='queue'&&r>=4)||(filter==='rated'&&r>0)||(filter==='unrated'&&r===0)||(filter==='note'&&hn);
+    let okF=filter==='all'||(filter==='queue'&&r>=4)||(filter==='now'&&getP(c._b.f))||(filter==='rated'&&r>0)||(filter==='unrated'&&r===0)||(filter==='note'&&hn);
     const okQ=!query||c.dataset.s.includes(query);const show=okF&&okQ;c.style.display=show?'':'none';if(show)vis++;}
   document.getElementById('empty').classList.toggle('hidden',vis>0);}
 document.getElementById('sort').addEventListener('change',e=>{const v=e.target.value,arr=cards.slice();
@@ -351,8 +359,8 @@ function renderRater(){closeNote();
   document.getElementById('pbar').style.width=(100*n/BOOKS.length)+'%';document.getElementById('ptext').textContent=n+' / '+BOOKS.length;
   const done=document.getElementById('done'),card=document.getElementById('scard'),hint=document.querySelector('.rhint'),btns=document.querySelector('.swipebtns');
   if(ri<0||ri>=BOOKS.length){card.style.display='none';hint.style.display='none';btns.style.display='none';done.style.display='block';
-    let liked=0,passed=0,notes=0;BOOKS.forEach(b=>{const r=getR(b.f);if(r>=4)liked++;else if(r>0)passed++;if(getN(b.f))notes++;});
-    document.getElementById('dstats').innerHTML=`<div class="dstat"><div class="v" style="color:var(--r5)">${liked}</div><div class="l">Liked</div></div><div class="dstat"><div class="v" style="color:var(--r1)">${passed}</div><div class="l">Passed</div></div><div class="dstat"><div class="v">${notes}</div><div class="l">Notes</div></div>`;
+    let liked=0,passed=0,notes=0,nowc=0;BOOKS.forEach(b=>{const r=getR(b.f);if(r>=4)liked++;else if(r>0)passed++;if(getN(b.f))notes++;if(getP(b.f))nowc++;});
+    document.getElementById('dstats').innerHTML=`<div class="dstat"><div class="v" style="color:var(--r5)">${liked}</div><div class="l">Liked</div></div><div class="dstat"><div class="v" style="color:var(--r1)">${passed}</div><div class="l">Passed</div></div><div class="dstat"><div class="v" style="color:var(--star)">${nowc}</div><div class="l">Now</div></div><div class="dstat"><div class="v">${notes}</div><div class="l">Notes</div></div>`;
     return;}
   card.style.display='block';hint.style.display='block';btns.style.display='flex';done.style.display='none';
   resetCard();
@@ -366,17 +374,21 @@ function renderRater(){closeNote();
   const nf=document.getElementById('rnoteflag'),note=getN(b.f);if(note){nf.style.display='block';nf.textContent='\U0001F4DD '+note}else nf.style.display='none';
 }
 function resetCard(){const c=document.getElementById('scard');c.style.transition='none';c.style.transform='';c.style.opacity='1';document.getElementById('stampLike').style.opacity=0;document.getElementById('stampNope').style.opacity=0;}
-function applyRating(dir){const b=BOOKS[ri];setRating(b.f,dir>0?5:1);save();syncCard(b.f);lastSwiped=ri;const nx=nextUnrated(ri);ri=(nx!==-1)?nx:BOOKS.length;renderRater();}
+function applyAction(b,act){ratings[b.f]=ratings[b.f]||{};if(act==='pass'){ratings[b.f].r=1;delete ratings[b.f].p;}else if(act==='like'){ratings[b.f].r=5;delete ratings[b.f].p;}else if(act==='super'){ratings[b.f].r=5;ratings[b.f].p=1;}if(!ratings[b.f].r&&!ratings[b.f].note&&!ratings[b.f].p)delete ratings[b.f];save();syncCard(b.f);}
+function advance(){lastSwiped=ri;const nx=nextUnrated(ri);ri=(nx!==-1)?nx:BOOKS.length;renderRater();}
+function applyRating(dir){applyAction(BOOKS[ri],dir>0?'like':'pass');advance();}
+function applySuper(){applyAction(BOOKS[ri],'super');advance();}
 function flingAndRate(dir){if(ri<0||ri>=BOOKS.length)return;const c=document.getElementById('scard');c.style.transition='transform .26s ease, opacity .26s ease';c.style.transform=`translate(${dir*700}px,0) rotate(${dir*20}deg)`;c.style.opacity='0';(dir>0?document.getElementById('stampLike'):document.getElementById('stampNope')).style.opacity=1;setTimeout(()=>applyRating(dir),230);}
+function flingUp(){if(ri<0||ri>=BOOKS.length)return;const c=document.getElementById('scard');c.style.transition='transform .28s ease, opacity .28s ease';c.style.transform='translate(0,-820px)';c.style.opacity='0';document.getElementById('stampNow').style.opacity=1;setTimeout(applySuper,240);}
 function undoSwipe(){if(lastSwiped==null)return;ri=lastSwiped;lastSwiped=null;renderRater();}
 (function(){
-  const c=document.getElementById('scard');let sx=0,sy=0,dragging=false,dx=0;
-  const like=document.getElementById('stampLike'),nope=document.getElementById('stampNope');
-  function start(x,y,tgt){if(ri>=BOOKS.length)return;if(tgt&&tgt.closest&&(tgt.closest('a')||tgt.id==='rauth'||tgt.closest('.rauth')))return;dragging=true;sx=x;sy=y;dx=0;c.style.transition='none';}
-  function move(x,y){if(!dragging)return;dx=x-sx;const dy=y-sy;c.style.transform=`translate(${dx}px,${dy*0.12}px) rotate(${dx/22}deg)`;const t=Math.min(Math.abs(dx)/90,1);like.style.opacity=dx>0?t:0;nope.style.opacity=dx<0?t:0;}
-  function end(){if(!dragging)return;dragging=false;if(dx>80)flingAndRate(1);else if(dx<-80)flingAndRate(-1);else{c.style.transition='transform .2s ease';c.style.transform='';like.style.opacity=0;nope.style.opacity=0;}}
+  const c=document.getElementById('scard');let sx=0,sy=0,dragging=false,dx=0,dy=0;
+  const like=document.getElementById('stampLike'),nope=document.getElementById('stampNope'),now=document.getElementById('stampNow');
+  function start(x,y,tgt){if(ri>=BOOKS.length)return;if(tgt&&tgt.closest&&(tgt.closest('a')||tgt.id==='rauth'||tgt.closest('.rauth')))return;dragging=true;sx=x;sy=y;dx=0;dy=0;c.style.transition='none';}
+  function move(x,y){if(!dragging)return;dx=x-sx;dy=y-sy;c.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/22}deg)`;if(dy<0&&Math.abs(dy)>Math.abs(dx)){now.style.opacity=Math.min(-dy/90,1);like.style.opacity=0;nope.style.opacity=0;}else{now.style.opacity=0;const t=Math.min(Math.abs(dx)/90,1);like.style.opacity=dx>0?t:0;nope.style.opacity=dx<0?t:0;}}
+  function end(){if(!dragging)return;dragging=false;if(dy<-80&&Math.abs(dy)>Math.abs(dx))flingUp();else if(dx>80)flingAndRate(1);else if(dx<-80)flingAndRate(-1);else{c.style.transition='transform .2s ease';c.style.transform='';like.style.opacity=0;nope.style.opacity=0;now.style.opacity=0;}}
   c.addEventListener('touchstart',e=>{const t=e.touches[0];start(t.clientX,t.clientY,e.target);},{passive:true});
-  c.addEventListener('touchmove',e=>{if(!dragging)return;const t=e.touches[0];move(t.clientX,t.clientY);if(Math.abs(dx)>8)e.preventDefault();},{passive:false});
+  c.addEventListener('touchmove',e=>{if(!dragging)return;const t=e.touches[0];move(t.clientX,t.clientY);if(Math.abs(dx)>8||Math.abs(dy)>8)e.preventDefault();},{passive:false});
   c.addEventListener('touchend',end);c.addEventListener('touchcancel',end);
   c.addEventListener('mousedown',e=>{start(e.clientX,e.clientY,e.target);if(dragging)e.preventDefault();});
   window.addEventListener('mousemove',e=>{if(dragging)move(e.clientX,e.clientY);});
@@ -387,11 +399,11 @@ function closeNote(){const r=document.getElementById('rinput');if(r)r.style.disp
 function commitNote(){const b=BOOKS[ri],val=document.getElementById('rin').value.trim();ratings[b.f]=ratings[b.f]||{};if(val)ratings[b.f].note=val;else delete ratings[b.f].note;if(!ratings[b.f].r&&!ratings[b.f].note)delete ratings[b.f];save();closeNote();renderRater();syncCard(b.f);}
 document.getElementById('rin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')commitNote();else if(e.key==='Escape')closeNote();});
 document.addEventListener('keydown',e=>{if(document.getElementById('app').classList.contains('hidden'))return;if(document.activeElement&&document.activeElement.tagName==='INPUT')return;if(mode!=='rate')return;
-  if(e.key==='ArrowRight'){e.preventDefault();flingAndRate(1);}else if(e.key==='ArrowLeft'){e.preventDefault();flingAndRate(-1);}else if(e.key.toLowerCase()==='n'){e.preventDefault();startNote();}else if(e.key.toLowerCase()==='z'){e.preventDefault();undoSwipe();}});
+  if(e.key==='ArrowRight'){e.preventDefault();flingAndRate(1);}else if(e.key==='ArrowLeft'){e.preventDefault();flingAndRate(-1);}else if(e.key==='ArrowUp'){e.preventDefault();flingUp();}else if(e.key.toLowerCase()==='n'){e.preventDefault();startNote();}else if(e.key.toLowerCase()==='z'){e.preventDefault();undoSwipe();}});
 function csvEsc(s){s=String(s==null?'':s);return (s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;}
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;a.click();}
-function exportAll(){const head=['File','Title','Author','Rating','Note'];const lines=[head.join(',')];const jj={};
-  BOOKS.forEach(b=>{const r=getR(b.f),n=getN(b.f);if(r||n){jj[b.f]={r:r||undefined,note:n||undefined};lines.push([b.f,b.t,b.a,r||'',n].map(csvEsc).join(','));}});
+function exportAll(){const head=['File','Title','Author','Rating','Priority','Note'];const lines=[head.join(',')];const jj={};
+  BOOKS.forEach(b=>{const r=getR(b.f),n=getN(b.f),pp=getP(b.f);if(r||n||pp){jj[b.f]={r:r||undefined,p:pp?1:undefined,note:n||undefined};lines.push([b.f,b.t,b.a,r||'',pp?'Now':'',n].map(csvEsc).join(','));}});
   download('audiobook_ratings.csv',lines.join('\n'),'text/csv');download('audiobook_ratings.json',JSON.stringify(jj,null,1),'application/json');}
 document.getElementById('expBtn').onclick=exportAll;document.getElementById('expBtn2').onclick=exportAll;
 ri=firstUnrated();if(ri<0)ri=BOOKS.length;
