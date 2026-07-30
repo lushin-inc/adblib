@@ -217,7 +217,7 @@ function save(){store.set('ablib',JSON.stringify(ratings))}
 function getR(f){return (ratings[f]&&ratings[f].r)||0}
 function getN(f){return (ratings[f]&&ratings[f].note)||''}
 function getP(f){return !!(ratings[f]&&ratings[f].p)}
-(function(){let ch=false;for(const k in ratings){const o=ratings[k];if(o&&typeof o.note==='string'&&o.note.trim().toLowerCase()==='now'){o.p=1;delete o.note;ch=true;}}if(ch)save();})();
+(function(){let ch=false;for(const k in ratings){const o=ratings[k];if(o&&typeof o.note==='string'&&/^now!?$/i.test(o.note.trim())&&!o.p){o.p=1;ch=true;}}if(ch)save();})();
 const moon='<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>',sun='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>';
 function applyTheme(t){document.documentElement.dataset.theme=t;document.getElementById('ic').innerHTML=(t==='dark'?moon:sun);store.set('ablib_theme',t)}
 applyTheme(store.get('ablib_theme')||'dark');
