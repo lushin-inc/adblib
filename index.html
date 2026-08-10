@@ -152,6 +152,8 @@ a.cover:hover{transform:translateY(-3px)}
       <div class="chip" data-f="unrated">Unrated <b id="c-unrated"></b></div>
       <div class="chip" data-f="note">📝 Notes <b id="c-note"></b></div>
       <div class="chip" data-f="ff">🎙️ Fireflies <b id="c-ff"></b></div>
+      <div class="chip" data-f="td">📄 Transcript <b id="c-td"></b></div>
+      <div class="chip" data-f="dl">⬇ Download <b id="c-dl"></b></div>
     </div>
   </div>
 </header>
@@ -262,28 +264,33 @@ function makeCard(b){const card=document.createElement('div');card.className='ca
   const auth=b.a||'',fa=splitAuthors(auth)[0]||'';
   card.innerHTML=`<div class="cw">${cov}<div class="ndot">📝</div><div class="pdot">🔥</div><div class="rt"></div></div><div class="meta"><div class="bt">${esc(b.t)}</div><div class="ba${fa?' lnk':''}">${esc(auth)}</div></div>`;
   const rt=card.querySelector('.rt');let st='';for(let i=1;i<=5;i++)st+=`<i data-v="${i}">★</i>`;rt.innerHTML=st;
-  rt.addEventListener('click',e=>{const s=e.target.closest('i');if(!s)return;e.preventDefault();const v=+s.dataset.v;setRating(b.f,getR(b.f)===v?0:v);paintCard(card);counts();if(filter!=='all')applyFilter();});
+  rt.addEventListener('click',e=>{const s=e.target.closest('i');if(!s)return;e.preventDefault();const v=+s.dataset.v;setRating(b.f,getR(b.f)===v?0:v);paintCard(card);counts();if(active.size)applyFilter();});
   if(fa)card.querySelector('.ba').addEventListener('click',()=>openAuthor(fa));
   card.querySelector('.cover').addEventListener('click',()=>openBook(b));
   card.querySelector('.bt').addEventListener('click',()=>openBook(b));
   paintCard(card);return card;}
 
 /* ---------- browse ---------- */
-let filter='all',cards=[];
+let active=new Set(),cards=[];
 function build(){const grid=document.getElementById('grid'),frag=document.createDocumentFragment();
   BOOKS.forEach(b=>{const c=makeCard(b);frag.appendChild(c);cards.push(c);});
   grid.appendChild(frag);counts();applyFilter();}
 function paintCard(card){const b=card._b,r=getR(b.f);card.querySelectorAll('.rt i').forEach(i=>i.classList.toggle('f',+i.dataset.v<=r));card.classList.toggle('has-note',!!getN(b.f));card.classList.toggle('pri',getP(b.f));}
 function refreshBrowseStars(){cards.forEach(paintCard);counts();}
 function setRating(f,v){ratings[f]=ratings[f]||{};if(v===0)delete ratings[f].r;else ratings[f].r=v;if(!ratings[f].r&&!ratings[f].note)delete ratings[f];save();}
-function counts(){let q=0,rt=0,nt=0,nw=0,ff=0;BOOKS.forEach(b=>{const r=getR(b.f);if(r>0){rt++;if(r>=4)q++}if(getN(b.f))nt++;if(getP(b.f))nw++;if(b.x||b.td)ff++;});
-  set('c-all',BOOKS.length);set('c-queue',q);set('c-now',nw);set('c-rated',rt);set('c-unrated',BOOKS.length-rt);set('c-note',nt);set('c-ff',ff);}
+function counts(){let q=0,rt=0,nt=0,nw=0,ff=0,td=0,dl=0;BOOKS.forEach(b=>{const r=getR(b.f);if(r>0){rt++;if(r>=4)q++}if(getN(b.f))nt++;if(getP(b.f))nw++;if(b.x)ff++;if(b.td)td++;if(b.u)dl++;});
+  set('c-all',BOOKS.length);set('c-queue',q);set('c-now',nw);set('c-rated',rt);set('c-unrated',BOOKS.length-rt);set('c-note',nt);set('c-ff',ff);set('c-td',td);set('c-dl',dl);}
 function set(id,v){document.getElementById(id).textContent=v}
-document.getElementById('chips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;filter=c.dataset.f;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c));applyFilter();});
+document.getElementById('chips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const f=c.dataset.f;
+  if(f==='all')active.clear();else{if(active.has(f))active.delete(f);else active.add(f);}
+  syncChips();applyFilter();});
+function syncChips(){document.querySelectorAll('#chips .chip').forEach(c=>{const f=c.dataset.f;c.classList.toggle('on',f==='all'?active.size===0:active.has(f));});}
+function matchF(b,f){const r=getR(b.f);
+  if(f==='queue')return r>=4;if(f==='now')return getP(b.f);if(f==='rated')return r>0;if(f==='unrated')return r===0;
+  if(f==='note')return !!getN(b.f);if(f==='ff')return !!b.x;if(f==='td')return !!b.td;if(f==='dl')return !!b.u;return true;}
 let tmr;document.getElementById('q').addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(applyFilter,110)});
 function applyFilter(){const query=norm(document.getElementById('q').value.trim());let vis=0;
-  for(const c of cards){const r=getR(c._b.f),hn=!!getN(c._b.f);
-    let okF=filter==='all'||(filter==='queue'&&r>=4)||(filter==='now'&&getP(c._b.f))||(filter==='rated'&&r>0)||(filter==='unrated'&&r===0)||(filter==='note'&&hn)||(filter==='ff'&&(!!c._b.x||!!c._b.td));
+  for(const c of cards){let okF=true;for(const f of active){if(!matchF(c._b,f)){okF=false;break;}}
     const okQ=!query||c.dataset.s.includes(query);const show=okF&&okQ;c.style.display=show?'':'none';if(show)vis++;}
   document.getElementById('empty').classList.toggle('hidden',vis>0);}
 document.getElementById('sort').addEventListener('change',e=>{const v=e.target.value,arr=cards.slice();
