@@ -44,6 +44,9 @@ a.cover:hover{transform:translateY(-3px)}
 .has-note .ndot{display:block}
 .pdot{position:absolute;top:6px;left:6px;font-size:11px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;display:none;}
 .card.pri .pdot{display:block}
+.deldot{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:11px;background:rgba(224,85,85,.85);border-radius:5px;padding:1px 5px;display:none;}
+.card.del .deldot{display:block}
+.card.del .cover{opacity:.45;}
 .bt{font-size:11.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .ba{font-size:10.5px;color:var(--muted);margin-top:1px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
 .ba.lnk{cursor:pointer;}.ba.lnk:hover{color:var(--accent);}
@@ -125,10 +128,12 @@ a.cover:hover{transform:translateY(-3px)}
 .stamp.like{left:16px;color:var(--r5);border-color:var(--r5);transform:rotate(-15deg);}
 .stamp.nope{right:16px;color:var(--r1);border-color:var(--r1);transform:rotate(15deg);}
 .stamp.now{display:none;}
+.stamp.del{left:50%;transform:translateX(-50%);color:#fff;border-color:var(--r1);background:var(--r1);top:16px;}
 .swipebtns{display:flex;justify-content:center;align-items:center;gap:16px;padding:14px 0 2px;}
 .sbtn{width:58px;height:58px;border-radius:50%;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);color:var(--text);}
 .sbtn.like{color:var(--r5);font-size:26px;}.sbtn.nope{color:var(--r1);}.sbtn.now{color:var(--star);}
 .sbtn.undo,.sbtn.note{width:46px;height:46px;font-size:16px;color:var(--muted);}
+.sbtn.del{width:46px;height:46px;font-size:17px;color:var(--r1);}
 .sbtn:active{transform:scale(.9);}
 .hidden{display:none!important}
 #navToggle{background:var(--panel);border:1px solid var(--line);color:var(--text);width:38px;height:38px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 auto;}
@@ -169,6 +174,9 @@ a.cover:hover{transform:translateY(-3px)}
 .xlink{display:flex;align-items:center;gap:9px;margin:16px auto 2px;width:calc(100% - 44px);max-width:500px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,transparent),color-mix(in srgb,var(--accent2) 16%,transparent));border:1px solid var(--line);border-radius:12px;padding:13px 16px;color:var(--text);text-decoration:none;font-size:14px;font-weight:600;cursor:pointer;}
 .xlink:hover{border-color:var(--accent2);}
 .xlink .x2{color:var(--muted);font-weight:500;margin-left:auto;font-size:12px;text-align:right;}
+.ratesrc{display:flex;gap:6px;max-width:720px;margin:0 auto 12px;background:var(--panel2);border-radius:12px;padding:4px;}
+.ratesrc button{flex:1;border:0;background:transparent;color:var(--muted);padding:12px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;}
+.ratesrc button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.2);}
 </style>
 </head>
 <body>
@@ -201,6 +209,7 @@ a.cover:hover{transform:translateY(-3px)}
       <div class="chip" data-f="rated">Rated <b id="c-rated"></b></div>
       <div class="chip" data-f="unrated">Unrated <b id="c-unrated"></b></div>
       <div class="chip" data-f="note">📝 Notes <b id="c-note"></b></div>
+      <div class="chip" data-f="del">🗑 Delete <b id="c-del"></b></div>
       <div class="chip" data-f="ff">🎙️ Fireflies <b id="c-ff"></b></div>
       <div class="chip" data-f="td">📄 Transcript <b id="c-td"></b></div>
       <div class="chip" data-f="ntd">🚫 No Transcript <b id="c-ntd"></b></div>
@@ -219,6 +228,7 @@ a.cover:hover{transform:translateY(-3px)}
       <div class="chip" data-f="rated">Rated <b id="bc-rated"></b></div>
       <div class="chip" data-f="unrated">Unrated <b id="bc-unrated"></b></div>
       <div class="chip" data-f="note">📝 Notes <b id="bc-note"></b></div>
+      <div class="chip" data-f="del">🗑 Delete <b id="bc-del"></b></div>
       <div class="chip" data-f="hasab">🎧 Full audiobook <b id="bc-hasab"></b></div>
     </div>
   </div>
@@ -257,12 +267,14 @@ a.cover:hover{transform:translateY(-3px)}
 </div>
 
 <div id="rate" class="hidden">
+  <div class="ratesrc" id="ratesrc"><button data-s="ab" class="on">🎧 Audiobooks</button><button data-s="bk">📘 Blinkist</button></div>
   <div class="prog"><div class="pwrap"><div class="pbar" id="pbar"></div></div><span class="ptext" id="ptext"></span><input id="jin" class="jin" type="number" min="1" placeholder="#" title="Jump to book #"><button class="sb" onclick="jumpNum()">Go</button><button class="sb" id="expBtn">Export</button></div>
   <div class="swipearea">
     <div class="rcard scard" id="scard">
       <div class="stamp like" id="stampLike">LIKE</div>
       <div class="stamp nope" id="stampNope">NOPE</div>
       <div class="stamp now" id="stampNow">NOW</div>
+      <div class="stamp del" id="stampDelete">DELETE</div>
       <div class="rcover" id="rcover"><span id="rcoverT"></span></div>
       <div class="rinfo"><div class="rname" id="rname"></div><div class="rauth" id="rauth"></div><div class="rlink" id="rlink"></div></div>
       <div class="rnoteflag" id="rnoteflag"></div>
@@ -272,11 +284,12 @@ a.cover:hover{transform:translateY(-3px)}
     <button class="sbtn nope" onclick="flingAndRate(-1)" title="Pass (left arrow)">✕</button>
     <button class="sbtn undo" onclick="undoSwipe()" title="Undo (Z)">↩</button>
     <button class="sbtn note" onclick="startNote()" title="Note (N)">📝</button>
+    <button class="sbtn del" onclick="flingDown()" title="Delete (down arrow / D)">🗑</button>
     <button class="sbtn now" onclick="flingUp()" title="Now / priority (up arrow)">⭐</button>
     <button class="sbtn like" onclick="flingAndRate(1)" title="Like (right arrow)">♥</button>
   </div>
   <div class="rinput" id="rinput" style="max-width:400px;margin:8px auto 0"><input id="rin" placeholder='Add a note...'><div class="tip">Enter to save · Esc to cancel</div></div>
-  <div class="rhint">Swipe · ← pass · like → · ↑ Now · N note · Z undo</div>
+  <div class="rhint">Swipe · ← pass · like → · ↑ Now · ↓ delete · N note · Z undo</div>
   <div class="done" id="done"><h1>🎧 All done</h1><p>You've been through every book.</p><p>Hit Export and send me the file — I'll pull download links for your likes.</p>
     <div class="dstats" id="dstats"></div><button class="dbtn" id="expBtn2">Export ratings</button><button class="dbtn ghost" onclick="jumpTo(0)">Start over from #1</button></div>
 </div>
@@ -314,13 +327,14 @@ function save(){store.set('ablib',JSON.stringify(ratings))}
 function getR(f){return (ratings[f]&&ratings[f].r)||0}
 function getN(f){return (ratings[f]&&ratings[f].note)||''}
 function getP(f){return !!(ratings[f]&&ratings[f].p)}
+function getD(f){return !!(ratings[f]&&ratings[f].d)}
 (function(){let ch=false;for(const k in ratings){const o=ratings[k];if(o&&typeof o.note==='string'&&/^now!?$/i.test(o.note.trim())&&!o.p){o.p=1;ch=true;}}if(ch)save();})();
 const moon='<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>',sun='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>';
 function applyTheme(t){document.documentElement.dataset.theme=t;document.getElementById('ic').innerHTML=(t==='dark'?moon:sun);store.set('ablib_theme',t)}
 applyTheme(store.get('ablib_theme')||'dark');
 document.getElementById('theme').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
 function unlock(){document.getElementById('gate').classList.add('hidden');document.getElementById('app').classList.remove('hidden');build();routeFromHash();}
-let ok=false;try{ok=sessionStorage.getItem('ablib_ok')==='1'}catch(e){}if(ok)unlock();
+let ok=false;try{ok=sessionStorage.getItem('ablib_ok')==='1'}catch(e){}
 function tryPw(){if(document.getElementById('pw').value===PASSWORD){try{sessionStorage.setItem('ablib_ok','1')}catch(e){}unlock();}else document.getElementById('pwErr').textContent='Incorrect password';}
 document.getElementById('pwBtn').onclick=tryPw;document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')tryPw();});
 function norm(s){return (s||'').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'')}
@@ -394,7 +408,7 @@ function makeCard(b){const card=document.createElement('div');card.className='ca
   const inner=coverHTML(b);
   const cov=`<div class="cover${(b.d||b.c)?'':' ph'}" ${(b.d||b.c)?'':`style="background:${grad(b.t)}"`}>${inner}</div>`;
   const auth=b.a||'',fa=splitAuthors(auth)[0]||'';
-  card.innerHTML=`<div class="cw">${cov}<div class="ndot">📝</div><div class="pdot">🔥</div><div class="rt"></div></div><div class="meta"><div class="bt">${esc(b.t)}</div><div class="ba${fa?' lnk':''}">${esc(auth)}</div></div>`;
+  card.innerHTML=`<div class="cw">${cov}<div class="ndot">📝</div><div class="pdot">🔥</div><div class="deldot">🗑</div><div class="rt"></div></div><div class="meta"><div class="bt">${esc(b.t)}</div><div class="ba${fa?' lnk':''}">${esc(auth)}</div></div>`;
   const rt=card.querySelector('.rt');let st='';for(let i=1;i<=5;i++)st+=`<i data-v="${i}">★</i>`;rt.innerHTML=st;
   rt.addEventListener('click',e=>{const s=e.target.closest('i');if(!s)return;e.preventDefault();const v=+s.dataset.v;setRating(b.f,getR(b.f)===v?0:v);paintCard(card);counts();if(active.size)applyFilter();});
   if(fa)card.querySelector('.ba').addEventListener('click',()=>openAuthor(fa));
@@ -412,19 +426,19 @@ document.getElementById('topic').addEventListener('change',e=>{topicSel=e.target
 function build(){const grid=document.getElementById('grid'),frag=document.createDocumentFragment();
   BOOKS.forEach(b=>{const c=makeCard(b);frag.appendChild(c);cards.push(c);});
   grid.appendChild(frag);buildTopics();counts();applyFilter();}
-function paintCard(card){const b=card._b,r=getR(b.f);card.querySelectorAll('.rt i').forEach(i=>i.classList.toggle('f',+i.dataset.v<=r));card.classList.toggle('has-note',!!getN(b.f));card.classList.toggle('pri',getP(b.f));}
+function paintCard(card){const b=card._b,r=getR(b.f);card.querySelectorAll('.rt i').forEach(i=>i.classList.toggle('f',+i.dataset.v<=r));card.classList.toggle('has-note',!!getN(b.f));card.classList.toggle('pri',getP(b.f));card.classList.toggle('del',getD(b.f));}
 function refreshBrowseStars(){cards.forEach(paintCard);counts();}
 function setRating(f,v){ratings[f]=ratings[f]||{};if(v===0)delete ratings[f].r;else ratings[f].r=v;if(!ratings[f].r&&!ratings[f].note)delete ratings[f];save();}
-function counts(){let q=0,rt=0,nt=0,nw=0,ff=0,td=0,ntd=0,dl=0;BOOKS.forEach(b=>{const r=getR(b.f);if(r>0){rt++;if(r>=4)q++}if(getN(b.f))nt++;if(getP(b.f))nw++;if(b.x)ff++;if(b.td)td++;else ntd++;if(b.u)dl++;});
-  set('c-all',BOOKS.length);set('c-queue',q);set('c-now',nw);set('c-rated',rt);set('c-unrated',BOOKS.length-rt);set('c-note',nt);set('c-ff',ff);set('c-td',td);set('c-ntd',ntd);set('c-dl',dl);}
+function counts(){let q=0,rt=0,nt=0,nw=0,ff=0,td=0,ntd=0,dl=0,dc=0;BOOKS.forEach(b=>{const r=getR(b.f);if(r>0){rt++;if(r>=4)q++}if(getN(b.f))nt++;if(getP(b.f))nw++;if(b.x)ff++;if(b.td)td++;else ntd++;if(b.u)dl++;if(getD(b.f))dc++;});
+  set('c-all',BOOKS.length);set('c-queue',q);set('c-now',nw);set('c-rated',rt);set('c-unrated',BOOKS.length-rt);set('c-note',nt);set('c-ff',ff);set('c-td',td);set('c-ntd',ntd);set('c-dl',dl);set('c-del',dc);}
 function set(id,v){document.getElementById(id).textContent=v}
 document.getElementById('chips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const f=c.dataset.f;
   if(f==='all'){active.clear();topicSel='';patternSel='';document.getElementById('topic').value='';}else{patternSel='';if(active.has(f))active.delete(f);else active.add(f);}
   syncChips();applyFilter();});
 function syncChips(){document.querySelectorAll('#chips .chip').forEach(c=>{const f=c.dataset.f;c.classList.toggle('on',f==='all'?active.size===0:active.has(f));});}
 function matchF(b,f){const r=getR(b.f);
-  if(f==='queue')return r>=4;if(f==='now')return getP(b.f);if(f==='rated')return r>0;if(f==='unrated')return r===0;
-  if(f==='note')return !!getN(b.f);if(f==='ff')return !!b.x;if(f==='td')return !!b.td;if(f==='ntd')return !b.td;if(f==='dl')return !!b.u;return true;}
+  if(f==='queue')return r>=4;if(f==='now')return getP(b.f);if(f==='rated')return r>0;if(f==='unrated')return r===0&&!getD(b.f);
+  if(f==='note')return !!getN(b.f);if(f==='del')return getD(b.f);if(f==='ff')return !!b.x;if(f==='td')return !!b.td;if(f==='ntd')return !b.td;if(f==='dl')return !!b.u;return true;}
 let tmr;document.getElementById('q').addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(applyFilter,110)});
 function applyFilter(){const query=norm(document.getElementById('q').value.trim());let vis=0;
   for(const c of cards){let okF=true;for(const f of active){if(!matchF(c._b,f)){okF=false;break;}}
@@ -513,46 +527,52 @@ function backFromDetail(){document.getElementById('detail').classList.add('hidde
 function syncCard(f){const c=cards.find(c=>c._b.f===f);if(c)paintCard(c);}
 
 /* ---------- rate (swipe deck) ---------- */
-let ri=0,history=[];
-function ratedCount(){return BOOKS.filter(b=>getR(b.f)).length}
-function firstUnrated(){for(let i=0;i<BOOKS.length;i++)if(!getR(BOOKS[i].f))return i;return -1}
-function nextUnrated(i){for(let j=i+1;j<BOOKS.length;j++)if(!getR(BOOKS[j].f))return j;for(let j=0;j<=i;j++)if(!getR(BOOKS[j].f))return j;return -1;}
+let ri=0,history=[],rateSrc='ab';
+function RARR(){return rateSrc==='bk'?BLINKIST:BOOKS;}
+function rCoverInner(b){if(rateSrc==='bk')return b.cid?`<img src="${BTHUMB(b.cid,600)}" referrerpolicy="no-referrer" alt="">`:null;return (b.d||b.c)?`<img src="${b.d||("covers/"+b.id+".jpg")}" alt="">`:null;}
+function ratedCount(){return RARR().filter(b=>getR(b.f)||getD(b.f)).length}
+function firstUnrated(){const A=RARR();for(let i=0;i<A.length;i++)if(!getR(A[i].f)&&!getD(A[i].f))return i;return -1}
+function nextUnrated(i){const A=RARR();for(let j=i+1;j<A.length;j++)if(!getR(A[j].f)&&!getD(A[j].f))return j;for(let j=0;j<=i;j++)if(!getR(A[j].f)&&!getD(A[j].f))return j;return -1;}
 function jumpTo(i){ri=i;renderRater();}
-function jumpNum(){const el=document.getElementById('jin');const v=parseInt(el.value,10);if(v>=1&&v<=BOOKS.length){ri=v-1;renderRater();el.blur();}else{el.value='';}}
+function jumpNum(){const el=document.getElementById('jin');const v=parseInt(el.value,10);if(v>=1&&v<=RARR().length){ri=v-1;renderRater();el.blur();}else{el.value='';}}
 document.getElementById('jin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')jumpNum();});
+document.getElementById('ratesrc').addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;const s=btn.dataset.s;if(s===rateSrc)return;rateSrc=s;history=[];document.querySelectorAll('#ratesrc button').forEach(x=>x.classList.toggle('on',x.dataset.s===s));ri=firstUnrated();if(ri<0)ri=RARR().length;renderRater();});
 function renderRater(){closeNote();
-  const n=ratedCount();
-  document.getElementById('pbar').style.width=(100*n/BOOKS.length)+'%';document.getElementById('ptext').textContent=n+' / '+BOOKS.length;
+  const A=RARR(),n=ratedCount();
+  document.getElementById('pbar').style.width=(100*n/A.length)+'%';document.getElementById('ptext').textContent=n+' / '+A.length;
   const done=document.getElementById('done'),card=document.getElementById('scard'),hint=document.querySelector('.rhint'),btns=document.querySelector('.swipebtns');
-  if(ri<0||ri>=BOOKS.length){card.style.display='none';hint.style.display='none';btns.style.display='none';done.style.display='block';
-    let liked=0,passed=0,notes=0,nowc=0;BOOKS.forEach(b=>{const r=getR(b.f);if(r>=4)liked++;else if(r>0)passed++;if(getN(b.f))notes++;if(getP(b.f))nowc++;});
-    document.getElementById('dstats').innerHTML=`<div class="dstat"><div class="v" style="color:var(--r5)">${liked}</div><div class="l">Liked</div></div><div class="dstat"><div class="v" style="color:var(--r1)">${passed}</div><div class="l">Passed</div></div><div class="dstat"><div class="v" style="color:var(--star)">${nowc}</div><div class="l">Now</div></div><div class="dstat"><div class="v">${notes}</div><div class="l">Notes</div></div>`;
+  if(ri<0||ri>=A.length){card.style.display='none';hint.style.display='none';btns.style.display='none';done.style.display='block';
+    let liked=0,passed=0,notes=0,nowc=0,delc=0;A.forEach(b=>{const r=getR(b.f);if(r>=4)liked++;else if(r>0)passed++;if(getN(b.f))notes++;if(getP(b.f))nowc++;if(getD(b.f))delc++;});
+    document.getElementById('dstats').innerHTML=`<div class="dstat"><div class="v" style="color:var(--r5)">${liked}</div><div class="l">Liked</div></div><div class="dstat"><div class="v" style="color:var(--r1)">${passed}</div><div class="l">Passed</div></div><div class="dstat"><div class="v" style="color:var(--star)">${nowc}</div><div class="l">Now</div></div><div class="dstat"><div class="v">${notes}</div><div class="l">Notes</div></div><div class="dstat"><div class="v" style="color:var(--r1)">${delc}</div><div class="l">Delete</div></div>`;
     return;}
   card.style.display='block';hint.style.display='block';btns.style.display='flex';done.style.display='none';
   resetCard();
-  const b=BOOKS[ri],rc=document.getElementById('rcover');
-  if(b.d||b.c){rc.className='rcover';rc.innerHTML=`<img src="${b.d||("covers/"+b.id+".jpg")}" alt="">`;}
+  const b=A[ri],rc=document.getElementById('rcover'),inner=rCoverInner(b);
+  if(inner){rc.className='rcover';rc.innerHTML=inner;}
   else{rc.className='rcover ph';rc.style.background=grad(b.t);rc.innerHTML=`<span>${esc(b.t)}</span>`;}
   document.getElementById('rname').textContent=b.t;
   const ra=document.getElementById('rauth'),fa=splitAuthors(b.a)[0]||'';
   ra.textContent=b.a||'';ra.className='rauth'+(fa?' lnk':'');ra.onclick=fa?(()=>openAuthor(fa)):null;
-  document.getElementById('rlink').innerHTML=b.u?`<a href="${esc(b.u)}" target="_blank" rel="noopener">Download ↓</a>`:'';
+  let _rl='';if(rateSrc==='bk'){const _p=[];if(b.au)_p.push(`<a href="${esc(b.au)}" target="_blank" rel="noopener">▶ Audio</a>`);if(b.td)_p.push(`<a href="${esc(b.td)}" target="_blank" rel="noopener">📄 Transcript</a>`);_rl=_p.join(' · ');}else{_rl=b.u?`<a href="${esc(b.u)}" target="_blank" rel="noopener">Download ↓</a>`:'';}
+  document.getElementById('rlink').innerHTML=_rl;
   const nf=document.getElementById('rnoteflag'),note=getN(b.f);if(note){nf.style.display='block';nf.textContent='\U0001F4DD '+note}else nf.style.display='none';
 }
-function resetCard(){const c=document.getElementById('scard');c.style.transition='none';c.style.transform='';c.style.opacity='1';document.getElementById('stampLike').style.opacity=0;document.getElementById('stampNope').style.opacity=0;}
-function applyAction(b,act){history.push({i:ri,f:b.f,prev:ratings[b.f]?JSON.parse(JSON.stringify(ratings[b.f])):null});ratings[b.f]=ratings[b.f]||{};if(act==='pass'){ratings[b.f].r=1;delete ratings[b.f].p;}else if(act==='like'){ratings[b.f].r=5;delete ratings[b.f].p;}else if(act==='super'){ratings[b.f].r=5;ratings[b.f].p=1;}if(!ratings[b.f].r&&!ratings[b.f].note&&!ratings[b.f].p)delete ratings[b.f];save();syncCard(b.f);}
-function advance(){const nx=nextUnrated(ri);ri=(nx!==-1)?nx:BOOKS.length;renderRater();}
-function applyRating(dir){applyAction(BOOKS[ri],dir>0?'like':'pass');advance();}
-function applySuper(){applyAction(BOOKS[ri],'super');advance();}
-function flingAndRate(dir){if(ri<0||ri>=BOOKS.length)return;const c=document.getElementById('scard');c.style.transition='transform .26s ease, opacity .26s ease';c.style.transform=`translate(${dir*700}px,0) rotate(${dir*20}deg)`;c.style.opacity='0';(dir>0?document.getElementById('stampLike'):document.getElementById('stampNope')).style.opacity=1;setTimeout(()=>applyRating(dir),230);}
-function flingUp(){if(ri<0||ri>=BOOKS.length)return;const c=document.getElementById('scard');c.style.transition='transform .28s ease, opacity .28s ease';c.style.transform='translate(0,-820px)';c.style.opacity='0';document.getElementById('stampNow').style.opacity=1;setTimeout(applySuper,240);}
-function undoSwipe(){if(!history.length)return;const h=history.pop();if(h.prev)ratings[h.f]=h.prev;else delete ratings[h.f];save();ri=h.i;renderRater();syncCard(h.f);}
+function resetCard(){const c=document.getElementById('scard');c.style.transition='none';c.style.transform='';c.style.opacity='1';document.getElementById('stampLike').style.opacity=0;document.getElementById('stampNope').style.opacity=0;document.getElementById('stampDelete').style.opacity=0;}
+function applyAction(b,act){history.push({i:ri,f:b.f,prev:ratings[b.f]?JSON.parse(JSON.stringify(ratings[b.f])):null});ratings[b.f]=ratings[b.f]||{};if(act==='pass'){ratings[b.f].r=1;delete ratings[b.f].p;}else if(act==='like'){ratings[b.f].r=5;delete ratings[b.f].p;}else if(act==='super'){ratings[b.f].r=5;ratings[b.f].p=1;delete ratings[b.f].d;}else if(act==='delete'){ratings[b.f].d=1;delete ratings[b.f].r;delete ratings[b.f].p;}if(act!=='delete')delete ratings[b.f].d;if(!ratings[b.f].r&&!ratings[b.f].note&&!ratings[b.f].p&&!ratings[b.f].d)delete ratings[b.f];save();syncCard(b.f);if(typeof bSyncCard==='function')bSyncCard(b.f);}
+function advance(){const nx=nextUnrated(ri);ri=(nx!==-1)?nx:RARR().length;renderRater();}
+function applyRating(dir){applyAction(RARR()[ri],dir>0?'like':'pass');advance();}
+function applySuper(){applyAction(RARR()[ri],'super');advance();}
+function flingAndRate(dir){if(ri<0||ri>=RARR().length)return;const c=document.getElementById('scard');c.style.transition='transform .26s ease, opacity .26s ease';c.style.transform=`translate(${dir*700}px,0) rotate(${dir*20}deg)`;c.style.opacity='0';(dir>0?document.getElementById('stampLike'):document.getElementById('stampNope')).style.opacity=1;setTimeout(()=>applyRating(dir),230);}
+function flingUp(){if(ri<0||ri>=RARR().length)return;const c=document.getElementById('scard');c.style.transition='transform .28s ease, opacity .28s ease';c.style.transform='translate(0,-820px)';c.style.opacity='0';document.getElementById('stampNow').style.opacity=1;setTimeout(applySuper,240);}
+function flingDown(){if(ri<0||ri>=RARR().length)return;const c=document.getElementById('scard');c.style.transition='transform .28s ease, opacity .28s ease';c.style.transform='translate(0,820px)';c.style.opacity='0';document.getElementById('stampDelete').style.opacity=1;setTimeout(applyDelete,240);}
+function applyDelete(){applyAction(RARR()[ri],'delete');advance();}
+function undoSwipe(){if(!history.length)return;const h=history.pop();if(h.prev)ratings[h.f]=h.prev;else delete ratings[h.f];save();ri=h.i;renderRater();syncCard(h.f);if(typeof bSyncCard==='function')bSyncCard(h.f);}
 (function(){
   const c=document.getElementById('scard');let sx=0,sy=0,dragging=false,dx=0,dy=0;
-  const like=document.getElementById('stampLike'),nope=document.getElementById('stampNope'),now=document.getElementById('stampNow');
-  function start(x,y,tgt){if(ri>=BOOKS.length)return;if(tgt&&tgt.closest&&(tgt.closest('a')||tgt.id==='rauth'||tgt.closest('.rauth')))return;dragging=true;sx=x;sy=y;dx=0;dy=0;c.style.transition='none';}
-  function move(x,y){if(!dragging)return;dx=x-sx;dy=y-sy;c.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/22}deg)`;if(dy<0&&Math.abs(dy)>Math.abs(dx)){now.style.opacity=Math.min(-dy/90,1);like.style.opacity=0;nope.style.opacity=0;}else{now.style.opacity=0;const t=Math.min(Math.abs(dx)/90,1);like.style.opacity=dx>0?t:0;nope.style.opacity=dx<0?t:0;}}
-  function end(){if(!dragging)return;dragging=false;if(dy<-80&&Math.abs(dy)>Math.abs(dx))flingUp();else if(dx>80)flingAndRate(1);else if(dx<-80)flingAndRate(-1);else{c.style.transition='transform .2s ease';c.style.transform='';like.style.opacity=0;nope.style.opacity=0;now.style.opacity=0;}}
+  const like=document.getElementById('stampLike'),nope=document.getElementById('stampNope'),now=document.getElementById('stampNow'),del=document.getElementById('stampDelete');
+  function start(x,y,tgt){if(ri>=RARR().length)return;if(tgt&&tgt.closest&&(tgt.closest('a')||tgt.id==='rauth'||tgt.closest('.rauth')))return;dragging=true;sx=x;sy=y;dx=0;dy=0;c.style.transition='none';}
+  function move(x,y){if(!dragging)return;dx=x-sx;dy=y-sy;c.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/22}deg)`;if(Math.abs(dy)>Math.abs(dx)){if(dy<0){now.style.opacity=Math.min(-dy/90,1);del.style.opacity=0;}else{del.style.opacity=Math.min(dy/90,1);now.style.opacity=0;}like.style.opacity=0;nope.style.opacity=0;}else{now.style.opacity=0;del.style.opacity=0;const t=Math.min(Math.abs(dx)/90,1);like.style.opacity=dx>0?t:0;nope.style.opacity=dx<0?t:0;}}
+  function end(){if(!dragging)return;dragging=false;if(dy<-80&&Math.abs(dy)>Math.abs(dx))flingUp();else if(dy>80&&Math.abs(dy)>Math.abs(dx))flingDown();else if(dx>80)flingAndRate(1);else if(dx<-80)flingAndRate(-1);else{c.style.transition='transform .2s ease';c.style.transform='';like.style.opacity=0;nope.style.opacity=0;now.style.opacity=0;del.style.opacity=0;}}
   c.addEventListener('touchstart',e=>{const t=e.touches[0];start(t.clientX,t.clientY,e.target);},{passive:true});
   c.addEventListener('touchmove',e=>{if(!dragging)return;const t=e.touches[0];move(t.clientX,t.clientY);if(Math.abs(dx)>8||Math.abs(dy)>8)e.preventDefault();},{passive:false});
   c.addEventListener('touchend',end);c.addEventListener('touchcancel',end);
@@ -560,17 +580,17 @@ function undoSwipe(){if(!history.length)return;const h=history.pop();if(h.prev)r
   window.addEventListener('mousemove',e=>{if(dragging)move(e.clientX,e.clientY);});
   window.addEventListener('mouseup',end);
 })();
-function startNote(){if(ri<0||ri>=BOOKS.length)return;const b=BOOKS[ri];const row=document.getElementById('rinput'),inp=document.getElementById('rin');row.style.display='block';inp.value=getN(b.f);inp.focus();}
+function startNote(){if(ri<0||ri>=RARR().length)return;const b=RARR()[ri];const row=document.getElementById('rinput'),inp=document.getElementById('rin');row.style.display='block';inp.value=getN(b.f);inp.focus();}
 function closeNote(){const r=document.getElementById('rinput');if(r)r.style.display='none';}
-function commitNote(){const b=BOOKS[ri],val=document.getElementById('rin').value.trim();ratings[b.f]=ratings[b.f]||{};if(val)ratings[b.f].note=val;else delete ratings[b.f].note;if(!ratings[b.f].r&&!ratings[b.f].note)delete ratings[b.f];save();closeNote();renderRater();syncCard(b.f);}
+function commitNote(){const b=RARR()[ri],val=document.getElementById('rin').value.trim();ratings[b.f]=ratings[b.f]||{};if(val)ratings[b.f].note=val;else delete ratings[b.f].note;if(!ratings[b.f].r&&!ratings[b.f].note)delete ratings[b.f];save();closeNote();renderRater();syncCard(b.f);if(typeof bSyncCard==='function')bSyncCard(b.f);}
 document.getElementById('rin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')commitNote();else if(e.key==='Escape')closeNote();});
 document.addEventListener('keydown',e=>{if(document.getElementById('app').classList.contains('hidden'))return;if(document.activeElement&&document.activeElement.tagName==='INPUT')return;if(mode!=='rate')return;
-  if(e.key==='ArrowRight'){e.preventDefault();flingAndRate(1);}else if(e.key==='ArrowLeft'){e.preventDefault();flingAndRate(-1);}else if(e.key==='ArrowUp'){e.preventDefault();flingUp();}else if(e.key.toLowerCase()==='n'){e.preventDefault();startNote();}else if(e.key.toLowerCase()==='z'){e.preventDefault();undoSwipe();}});
+  if(e.key==='ArrowRight'){e.preventDefault();flingAndRate(1);}else if(e.key==='ArrowLeft'){e.preventDefault();flingAndRate(-1);}else if(e.key==='ArrowUp'){e.preventDefault();flingUp();}else if(e.key==='ArrowDown'||e.key.toLowerCase()==='d'){e.preventDefault();flingDown();}else if(e.key.toLowerCase()==='n'){e.preventDefault();startNote();}else if(e.key.toLowerCase()==='z'){e.preventDefault();undoSwipe();}});
 function csvEsc(s){s=String(s==null?'':s);return (s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;}
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;a.click();}
-function exportAll(){const head=['File','Title','Author','Rating','Priority','Note'];const lines=[head.join(',')];const jj={};
-  BOOKS.forEach(b=>{const r=getR(b.f),n=getN(b.f),pp=getP(b.f);if(r||n||pp){jj[b.f]={r:r||undefined,p:pp?1:undefined,note:n||undefined};lines.push([b.f,b.t,b.a,r||'',pp?'Now':'',n].map(csvEsc).join(','));}});
-  download('audiobook_ratings.csv',lines.join('\n'),'text/csv');download('audiobook_ratings.json',JSON.stringify(jj,null,1),'application/json');}
+function exportAll(){const bk=rateSrc==='bk',A=RARR();const head=bk?['File','Title','Author','Category','Rating','Priority','Delete','Note']:['File','Title','Author','Rating','Priority','Delete','Note'];const lines=[head.join(',')];const jj={};
+  A.forEach(b=>{const r=getR(b.f),n=getN(b.f),pp=getP(b.f),dd=getD(b.f);if(r||n||pp||dd){jj[b.f]={r:r||undefined,p:pp?1:undefined,d:dd?1:undefined,note:n||undefined};lines.push((bk?[b.f,b.t,b.a,b.fo,r||'',pp?'Now':'',dd?'DELETE':'',n]:[b.f,b.t,b.a,r||'',pp?'Now':'',dd?'DELETE':'',n]).map(csvEsc).join(','));}});
+  const pre=bk?'blinkist':'audiobook';download(pre+'_ratings.csv',lines.join('\n'),'text/csv');download(pre+'_ratings.json',JSON.stringify(jj,null,1),'application/json');}
 document.getElementById('expBtn').onclick=exportAll;document.getElementById('expBtn2').onclick=exportAll;
 
 /* ---------- Blinkist ---------- */
@@ -580,21 +600,21 @@ document.getElementById('mBlink').onclick=()=>{bActive.clear();bcatSel='';docume
 function bMakeCard(o){const card=document.createElement('div');card.className='card';card._o=o;
   card.dataset.s=norm(o.t+' '+o.a);card._title=norm(o.t);card._author=norm(o.a);card._cat=o.fo||'';
   const cov=`<div class="cover${o.cid?'':' ph'}" ${o.cid?'':`style="background:${grad(o.t)}"`}>${o.cid?`<img src="${BTHUMB(o.cid,400)}" loading="lazy" referrerpolicy="no-referrer" alt="">`:`<span>${esc(o.t)}</span>`}</div>`;
-  card.innerHTML=`<div class="cw">${cov}${o.ab!=null?'<div class="abadge" title="Full audiobook in your library">🎧</div>':''}<div class="ndot">📝</div><div class="pdot">🔥</div><div class="rt"></div></div><div class="meta"><div class="bt">${esc(o.t)}</div><div class="ba">${esc(o.a||'')}</div></div>`;
+  card.innerHTML=`<div class="cw">${cov}${o.ab!=null?'<div class="abadge" title="Full audiobook in your library">🎧</div>':''}<div class="ndot">📝</div><div class="pdot">🔥</div><div class="deldot">🗑</div><div class="rt"></div></div><div class="meta"><div class="bt">${esc(o.t)}</div><div class="ba">${esc(o.a||'')}</div></div>`;
   const rt=card.querySelector('.rt');let st='';for(let i=1;i<=5;i++)st+=`<i data-v="${i}">★</i>`;rt.innerHTML=st;
   rt.addEventListener('click',e=>{const s=e.target.closest('i');if(!s)return;e.preventDefault();const v=+s.dataset.v;setRating(o.f,getR(o.f)===v?0:v);bPaint(card);bCounts();if(bActive.size)bApplyFilter();});
   card.querySelector('.cover').addEventListener('click',()=>openBlink(o));
   card.querySelector('.bt').addEventListener('click',()=>openBlink(o));
   bPaint(card);return card;}
-function bPaint(card){const o=card._o,r=getR(o.f);card.querySelectorAll('.rt i').forEach(i=>i.classList.toggle('f',+i.dataset.v<=r));card.classList.toggle('has-note',!!getN(o.f));card.classList.toggle('pri',getP(o.f));}
+function bPaint(card){const o=card._o,r=getR(o.f);card.querySelectorAll('.rt i').forEach(i=>i.classList.toggle('f',+i.dataset.v<=r));card.classList.toggle('has-note',!!getN(o.f));card.classList.toggle('pri',getP(o.f));card.classList.toggle('del',getD(o.f));}
 function bBuildOnce(){if(bBuilt)return;bBuilt=true;const grid=document.getElementById('bgrid'),frag=document.createDocumentFragment();
   BLINKIST.forEach(o=>{const c=bMakeCard(o);frag.appendChild(c);bcards.push(c);});grid.appendChild(frag);bBuildCats();bCounts();}
 function bBuildCats(){const c={};BLINKIST.forEach(o=>{if(o.fo)c[o.fo]=(c[o.fo]||0)+1;});
   const names=Object.keys(c).sort();const sel=document.getElementById('bcat');
   sel.innerHTML='<option value="">All categories</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)} (${c[n]})</option>`).join('');}
-function bCounts(){let q=0,rt=0,nt=0,nw=0,hab=0;BLINKIST.forEach(o=>{const r=getR(o.f);if(r>0){rt++;if(r>=4)q++}if(getN(o.f))nt++;if(getP(o.f))nw++;if(o.ab!=null)hab++;});
-  set('bc-all',BLINKIST.length);set('bc-queue',q);set('bc-now',nw);set('bc-rated',rt);set('bc-unrated',BLINKIST.length-rt);set('bc-note',nt);set('bc-hasab',hab);}
-function bMatchF(o,f){const r=getR(o.f);if(f==='queue')return r>=4;if(f==='now')return getP(o.f);if(f==='rated')return r>0;if(f==='unrated')return r===0;if(f==='note')return !!getN(o.f);if(f==='hasab')return o.ab!=null;return true;}
+function bCounts(){let q=0,rt=0,nt=0,nw=0,hab=0,dc=0;BLINKIST.forEach(o=>{const r=getR(o.f);if(r>0){rt++;if(r>=4)q++}if(getN(o.f))nt++;if(getP(o.f))nw++;if(o.ab!=null)hab++;if(getD(o.f))dc++;});
+  set('bc-all',BLINKIST.length);set('bc-queue',q);set('bc-now',nw);set('bc-rated',rt);set('bc-unrated',BLINKIST.length-rt);set('bc-note',nt);set('bc-del',dc);set('bc-hasab',hab);}
+function bMatchF(o,f){const r=getR(o.f);if(f==='queue')return r>=4;if(f==='now')return getP(o.f);if(f==='rated')return r>0;if(f==='unrated')return r===0&&!getD(o.f);if(f==='note')return !!getN(o.f);if(f==='del')return getD(o.f);if(f==='hasab')return o.ab!=null;return true;}
 function bSyncChips(){document.querySelectorAll('#bchips .chip').forEach(c=>{const f=c.dataset.f;c.classList.toggle('on',f==='all'?bActive.size===0:bActive.has(f));});}
 function bApplyFilter(){const query=norm(document.getElementById('bq').value.trim());let vis=0;
   for(const c of bcards){let okF=true;for(const f of bActive){if(!bMatchF(c._o,f)){okF=false;break;}}
@@ -643,6 +663,7 @@ document.getElementById('bdin').addEventListener('keydown',e=>{e.stopPropagation
 function bSyncCard(f){const c=bcards.find(c=>c._o.f===f);if(c)bPaint(c);}
 function backFromBDetail(){document.getElementById('bdetail').classList.add('hidden');setMode('blink');bApplyFilter();try{location.hash='blink'}catch(e){}}
 
-ri=firstUnrated();if(ri<0)ri=BOOKS.length;
+ri=firstUnrated();if(ri<0)ri=RARR().length;
+if(ok)unlock();
 </script>
 </body></html>
