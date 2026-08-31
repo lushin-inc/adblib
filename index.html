@@ -177,6 +177,31 @@ a.cover:hover{transform:translateY(-3px)}
 .ratesrc{display:flex;gap:6px;max-width:720px;margin:0 auto 12px;background:var(--panel2);border-radius:12px;padding:4px;}
 .ratesrc button{flex:1;border:0;background:transparent;color:var(--muted);padding:12px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;}
 .ratesrc button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.2);}
+#predict{max-width:1120px;margin:0 auto;padding:10px 16px 60px;}
+.pctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0 12px;}
+.psrc{display:flex;gap:4px;background:var(--panel2);border-radius:10px;padding:3px;}
+.psrc button{border:0;background:transparent;color:var(--muted);padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+.psrc button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.pchip{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer;white-space:nowrap;}
+.pchip.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent;}
+.pacc{font-size:12.5px;color:var(--muted);}
+.pnote{font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.5;}
+.pbulk{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:0;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+.pgrid{display:flex;flex-direction:column;gap:8px;}
+.prow{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 11px;}
+.prow .pc{width:38px;height:57px;flex:0 0 38px;border-radius:5px;overflow:hidden;background:#222;cursor:pointer;}
+.prow .pc img{width:100%;height:100%;object-fit:cover;display:block;}
+.prow .pi{flex:1;min-width:0;cursor:pointer;}
+.prow .pt{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.prow .pa{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.prow .prsn{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pverd{flex:0 0 auto;text-align:right;min-width:74px;}
+.pbadge{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.pbadge.like{background:rgba(63,191,111,.16);color:var(--r5);}
+.pbadge.pass{background:rgba(224,85,85,.16);color:var(--r1);}
+.pconf{font-size:11px;color:var(--muted);margin-top:3px;}
+.papply{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:9px 11px;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;}
+.papply:hover{border-color:var(--accent);}
 </style>
 </head>
 <body>
@@ -191,6 +216,7 @@ a.cover:hover{transform:translateY(-3px)}
   <button id="mRate">🎴 Rate</button>
   <button id="mTrends">📈 Trends</button>
   <button id="mBlink">📘 Blinkist</button>
+  <button id="mPredict">🔮 Predict</button>
 </nav>
 <header>
   <div class="bar"><button id="navToggle" aria-label="Menu">☰</button><div class="title">Audiobook Library</div>
@@ -296,6 +322,24 @@ a.cover:hover{transform:translateY(-3px)}
 </div>
 <div id="blink" class="hidden"><main><div class="grid" id="bgrid"></div><div class="empty hidden" id="bempty">Nothing here.</div></main></div>
 
+<div id="predict" class="hidden">
+  <div class="pctrl">
+    <div class="psrc" id="psrc"><button data-s="bk" class="on">📘 Blinkist</button><button data-s="ab">🎧 Audiobooks</button></div>
+    <div class="pchip conf on" data-conf="0">All</div>
+    <div class="pchip conf" data-conf="0.7">≥70%</div>
+    <div class="pchip conf" data-conf="0.85">≥85%</div>
+    <div class="pchip conf" data-conf="0.95">≥95%</div>
+    <span style="width:6px;display:inline-block"></span>
+    <div class="pchip pv on" data-v="">Both</div>
+    <div class="pchip pv" data-v="1">👍 Keep</div>
+    <div class="pchip pv" data-v="0">👎 Pass</div>
+  </div>
+  <p class="pnote" id="pnote"></p>
+  <div class="pctrl"><button class="pbulk" id="pbulk">Accept all shown</button><span class="pacc" id="pcount"></span></div>
+  <div class="pgrid" id="pgrid"></div>
+  <div class="empty hidden" id="pempty">Rate some books first — predictions need your ratings to learn from.</div>
+</div>
+
 <div id="bdetail" class="hidden">
   <div class="adhead"><button class="sb" onclick="backFromBDetail()">← Blinkist</button></div>
   <div class="rcard">
@@ -352,13 +396,14 @@ document.getElementById('navback').onclick=()=>setNav(false);
 /* ---------- modes ---------- */
 let mode='browse';
 function setMode(m){mode=m;patternSel='';
-  [['mBrowse','browse'],['mAuthors','authors'],['mRate','rate'],['mTrends','trends'],['mBlink','blink']].forEach(([id,mm])=>document.getElementById(id).classList.toggle('on',m===mm));
+  [['mBrowse','browse'],['mAuthors','authors'],['mRate','rate'],['mTrends','trends'],['mBlink','blink'],['mPredict','predict']].forEach(([id,mm])=>document.getElementById(id).classList.toggle('on',m===mm));
   document.getElementById('browse').classList.toggle('hidden',m!=='browse');
   document.getElementById('browseTools').classList.toggle('hidden',m!=='browse');
   document.getElementById('authors').classList.toggle('hidden',m!=='authors');
   document.getElementById('rate').classList.toggle('hidden',m!=='rate');
   document.getElementById('trends').classList.toggle('hidden',m!=='trends');
   document.getElementById('blink').classList.toggle('hidden',m!=='blink');
+  document.getElementById('predict').classList.toggle('hidden',m!=='predict');
   document.getElementById('blinkTools').classList.toggle('hidden',m!=='blink');
   document.getElementById('bdetail').classList.add('hidden');
   document.getElementById('detail').classList.add('hidden');
@@ -367,6 +412,7 @@ function setMode(m){mode=m;patternSel='';
   else if(m==='authors'){document.getElementById('authorDetail').classList.add('hidden');document.getElementById('authorList').classList.remove('hidden');renderAuthorList();}
   else if(m==='trends')renderTrends();
   else if(m==='blink')renderBlink();
+  else if(m==='predict')renderPredict();
   else refreshBrowseStars();}
 document.getElementById('mBrowse').onclick=()=>{active.clear();topicSel='';patternSel='';document.getElementById('topic').value='';document.getElementById('q').value='';syncChips();setMode('browse');applyFilter();try{location.hash=''}catch(e){}};
 document.getElementById('mAuthors').onclick=()=>{setMode('authors');try{location.hash='authors'}catch(e){}};
@@ -483,6 +529,7 @@ function routeFromHash(){let h='';try{h=decodeURIComponent(location.hash.replace
   else if(h==='rate')setMode('rate');
   else if(h==='trends')setMode('trends');
   else if(h==='blink')setMode('blink');
+  else if(h==='predict')setMode('predict');
   else setMode('browse');}
 window.addEventListener('hashchange',()=>{if(!document.getElementById('app').classList.contains('hidden'))routeFromHash();});
 
@@ -492,7 +539,7 @@ function openBook(b){
   const inAuthor=!document.getElementById('authors').classList.contains('hidden')&&!document.getElementById('authorDetail').classList.contains('hidden');
   const authName=inAuthor?document.getElementById('adName').textContent:null;
   detailReturn=authName?(()=>openAuthor(authName)):(()=>{setMode('browse');try{location.hash=''}catch(e){}});
-  ['browse','browseTools','authors','rate','trends','blink','blinkTools','bdetail'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  ['browse','browseTools','authors','rate','trends','blink','blinkTools','bdetail','predict'].forEach(id=>document.getElementById(id).classList.add('hidden'));
   document.getElementById('detail').classList.remove('hidden');
   detailBook=b;
   const dc=document.getElementById('dcover');
@@ -635,7 +682,7 @@ document.getElementById('bsort').addEventListener('change',e=>{const v=e.target.
   else if(v==='rating')arr.sort((a,b)=>(getR(b._o.f)-getR(a._o.f))||cmp(a._title,b._title));
   const grid=document.getElementById('bgrid');arr.forEach(c=>grid.appendChild(c));});
 function openBlink(o){
-  ['browse','browseTools','authors','rate','trends','detail','blink','blinkTools'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  ['browse','browseTools','authors','rate','trends','detail','blink','blinkTools','predict'].forEach(id=>document.getElementById(id).classList.add('hidden'));
   document.getElementById('bdetail').classList.remove('hidden');bDetail=o;
   const dc=document.getElementById('bdcover');
   if(o.cid){dc.className='rcover';dc.innerHTML=`<img src="${BTHUMB(o.cid,800)}" referrerpolicy="no-referrer" alt="">`;}
@@ -664,6 +711,68 @@ function commitBNote(){const o=bDetail,val=document.getElementById('bdin').value
 document.getElementById('bdin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')commitBNote();else if(e.key==='Escape')closeBNote();});
 function bSyncCard(f){const c=bcards.find(c=>c._o.f===f);if(c)bPaint(c);}
 function backFromBDetail(){document.getElementById('bdetail').classList.add('hidden');setMode('blink');bApplyFilter();try{location.hash='blink'}catch(e){}}
+
+
+/* ---------- Predict (learns from your ratings) ---------- */
+let predSrc='bk',predConf=0,predV='';
+function predArr(){return predSrc==='bk'?BLINKIST:BOOKS;}
+const P_STOP=new Set('the a an of an of and to in for your you how why what when who on with is are be at it that this his her its their from into out about over more most less new old book books guide story life world'.split(' '));
+function predFeats(o){const fs=[];
+  if(predSrc==='bk'){if(o.fo)fs.push('cat='+o.fo);}else{(o.tg||[]).forEach(t=>fs.push('cat='+t));}
+  const a=String(o.a||'').split(',')[0].split(' and ')[0].split('&')[0].trim().split(/\s+/);
+  if(a.length&&a[a.length-1])fs.push('auth='+a[a.length-1].toLowerCase());
+  const toks=String(o.t||'').toLowerCase().match(/[a-z0-9]+/g)||[];
+  toks.forEach(t=>{if(t.length>2&&!P_STOP.has(t))fs.push('t='+t);});
+  return fs;}
+function predLabel(f){const v=ratings[f];if(!v)return null;if(v.d)return 0;if(v.p||(v.r>=4))return 1;if(v.r===1)return 0;return null;}
+function buildModel(){const A=predArr();const fc=[{},{}],cc=[0,0],fcount=[0,0],feat={};const lab=[];
+  A.forEach(o=>{const y=predLabel(o.f);if(y===null)return;const fs=predFeats(o);lab.push([fs,y]);cc[y]++;fs.forEach(f=>{fc[y][f]=(fc[y][f]||0)+1;fcount[y]++;feat[f]=1;});});
+  return {fc,cc,fcount,V:Object.keys(feat).length,lab,n:lab.length};}
+function scoreFS(fs,M,skipY){
+  const cc0=M.cc[0]-(skipY===0?1:0),cc1=M.cc[1]-(skipY===1?1:0);
+  const lp=[Math.log((cc0+1)/(cc0+cc1+2)),Math.log((cc1+1)/(cc0+cc1+2))];
+  for(let c=0;c<2;c++){const base=M.fcount[c]-((skipY===c)?fsLen(skipY):0);
+    for(const f of fs){let cnt=M.fc[c][f]||0;if(skipY===c)cnt-=1;lp[c]+=Math.log((cnt+1)/((skipY===c?base:M.fcount[c])+M.V));}}
+  const m=Math.max(lp[0],lp[1]),e0=Math.exp(lp[0]-m),e1=Math.exp(lp[1]-m),p1=e1/(e0+e1);
+  return p1;}
+let _fsLenCur=0;function fsLen(){return _fsLenCur;}
+function scoreBook(o,M){const fs=predFeats(o);_fsLenCur=fs.length;const p1=scoreFS(fs,M,-1);
+  let best=null,bv=-1;for(const f of fs){const n1=M.fc[1][f]||0,n0=M.fc[0][f]||0,tot=n0+n1;if(tot<3)continue;const rate=n1/tot;const lo=Math.abs(rate-0.5);if(lo>bv){bv=lo;best=f;}}
+  return {p1,conf:Math.max(p1,1-p1),like:p1>=0.5,reason:best,rrate:best?((M.fc[1][best]||0)/((M.fc[1][best]||0)+(M.fc[0][best]||0))):0};}
+function looAcc(M){if(M.n<10)return null;let ok=0;for(const [fs,y] of M.lab){_fsLenCur=fs.length;const p1=scoreFS(fs,M,y);const pred=p1>=0.5?1:0;if(pred===y)ok++;}return ok/M.n;}
+function reasonText(f,rate){const r=Math.round(rate*100);if(!f)return '';
+  if(f.indexOf('cat=')===0)return (predSrc==='bk'?f.slice(4):f.slice(4))+' · you keep '+r+'%';
+  if(f.indexOf('auth=')===0)return 'this author · you keep '+r+'%';
+  if(f.indexOf('t=')===0)return 'titles with “'+f.slice(2)+'” · '+r+'%';
+  return '';}
+let _predModel=null,_predList=[];
+function renderPredict(){
+  const M=buildModel();_predModel=M;
+  const pempty=document.getElementById('pempty'),grid=document.getElementById('pgrid');
+  if(M.n<10){pempty.classList.remove('hidden');pempty.textContent='Rate at least ~10 '+(predSrc==='bk'?'Blinkist':'audiobook')+' books first — the more you rate, the better this gets.';grid.innerHTML='';document.getElementById('pnote').textContent='';document.getElementById('pcount').textContent='';return;}
+  pempty.classList.add('hidden');
+  const acc=looAcc(M);
+  document.getElementById('pnote').innerHTML='Trained on your <b>'+M.n+'</b> rated '+(predSrc==='bk'?'Blinkist':'audiobook')+' books. On your own ratings it agrees <b>'+Math.round(acc*100)+'%</b> of the time — treat it as a strong guess, sharpest on the high-confidence picks. Accepting a prediction just sets that rating; you can change it anytime.';
+  const A=predArr();const preds=[];
+  for(const o of A){if(predLabel(o.f)!==null)continue;if(getR(o.f)||getD(o.f)||getP(o.f))continue;const s=scoreBook(o,M);preds.push([o,s]);}
+  preds.sort((a,b)=>b[1].conf-a[1].conf);
+  const filt=preds.filter(([o,s])=>s.conf>=predConf&&(predV===''||(predV==='1')===s.like));
+  _predList=filt;
+  const CAP=400;const show=filt.slice(0,CAP);
+  document.getElementById('pcount').textContent=filt.length+' predictions'+(filt.length>CAP?' (showing top '+CAP+')':'');
+  const bthumb=(o)=>o.cid?`<img src="${BTHUMB(o.cid,120)}" loading="lazy" referrerpolicy="no-referrer" alt="">`:'';
+  const abcov=(o)=>(o.d||o.c)?`<img src="${o.d||('covers/'+o.id+'.jpg')}" loading="lazy" alt="">`:'';
+  grid.innerHTML=show.map((row,idx)=>{const o=row[0],s=row[1];const cov=predSrc==='bk'?bthumb(o):abcov(o);
+    return `<div class="prow" data-i="${idx}"><div class="pc">${cov}</div><div class="pi"><div class="pt">${esc(o.t)}</div><div class="pa">${esc(o.a||'')}</div><div class="prsn">${esc(reasonText(s.reason,s.rrate))}</div></div><div class="pverd"><span class="pbadge ${s.like?'like':'pass'}">${s.like?'👍 Keep':'👎 Pass'}</span><div class="pconf">${Math.round(s.conf*100)}% sure</div></div><button class="papply" data-i="${idx}">Accept</button></div>`;}).join('');
+  // wire
+  grid.querySelectorAll('.papply').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();const i=+btn.dataset.i;const [o,s]=show[i];setRating(o.f,s.like?5:1);bCounts&&bCounts();counts&&counts();syncCard&&syncCard(o.f);bSyncCard&&bSyncCard(o.f);renderPredict();});
+  grid.querySelectorAll('.pc,.pi').forEach(el=>el.onclick=()=>{const i=+el.closest('.prow').dataset.i;const o=show[i][0];predSrc==='bk'?openBlink(o):openBook(o);});
+}
+document.getElementById('mPredict').onclick=()=>{setMode('predict');try{location.hash='predict'}catch(e){}};
+document.getElementById('psrc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.s===predSrc)return;predSrc=b.dataset.s;document.querySelectorAll('#psrc button').forEach(x=>x.classList.toggle('on',x.dataset.s===predSrc));renderPredict();});
+document.querySelectorAll('#predict .pchip.conf').forEach(c=>c.onclick=()=>{predConf=parseFloat(c.dataset.conf);document.querySelectorAll('#predict .pchip.conf').forEach(x=>x.classList.toggle('on',x===c));renderPredict();});
+document.querySelectorAll('#predict .pchip.pv').forEach(c=>c.onclick=()=>{predV=c.dataset.v;document.querySelectorAll('#predict .pchip.pv').forEach(x=>x.classList.toggle('on',x===c));renderPredict();});
+document.getElementById('pbulk').onclick=()=>{if(!_predList.length)return;const n=_predList.length;if(!confirm('Accept '+n+' predicted ratings? You can change any of them later.'))return;_predList.forEach(([o,s])=>setRating(o.f,s.like?5:1));bCounts&&bCounts();counts&&counts();renderPredict();};
 
 ri=firstUnrated();if(ri<0)ri=RARR().length;
 if(ok)unlock();
