@@ -202,6 +202,10 @@ a.cover:hover{transform:translateY(-3px)}
 .pconf{font-size:11px;color:var(--muted);margin-top:3px;}
 .papply{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:9px 11px;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;}
 .papply:hover{border-color:var(--accent);}
+.pact{display:flex;gap:6px;flex:0 0 auto;}
+.pset{width:42px;height:42px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;line-height:1;}
+.pset.keep:hover{border-color:var(--r5);background:rgba(63,191,111,.14);}
+.pset.pass:hover{border-color:var(--r1);background:rgba(224,85,85,.14);}
 </style>
 </head>
 <body>
@@ -759,8 +763,8 @@ function renderPredict(){
   const bthumb=(o)=>o.cid?`<img src="${BTHUMB(o.cid,120)}" loading="lazy" referrerpolicy="no-referrer" alt="">`:'';
   const abcov=(o)=>(o.d||o.c)?`<img src="${o.d||('covers/'+o.id+'.jpg')}" loading="lazy" alt="">`:'';
   grid.innerHTML=show.map((row,idx)=>{const o=row[0],s=row[1],cov=predSrc==='bk'?bthumb(o):abcov(o);
-    return `<div class="prow" data-i="${idx}"><div class="pc">${cov}</div><div class="pi"><div class="pt">${esc(o.t)}</div><div class="pa">${esc(o.a||'')}</div><div class="prsn">${esc(reasonText(s.reason,s.rrate))}</div></div><div class="pverd"><span class="pbadge ${s.like?'like':'pass'}">${s.like?'👍 Keep':'👎 Pass'}</span><div class="pconf">${Math.round(s.conf*100)}% sure</div></div><button class="papply" data-i="${idx}">Accept</button></div>`;}).join('');
-  grid.querySelectorAll('.papply').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();const i=+btn.dataset.i;const [o,s]=show[i];setRating(o.f,s.like?5:1);bCounts&&bCounts();counts&&counts();syncCard&&syncCard(o.f);bSyncCard&&bSyncCard(o.f);renderPredict();});
+    return `<div class="prow" data-i="${idx}"><div class="pc">${cov}</div><div class="pi"><div class="pt">${esc(o.t)}</div><div class="pa">${esc(o.a||'')}</div><div class="prsn">${esc(reasonText(s.reason,s.rrate))}</div></div><div class="pverd"><span class="pbadge ${s.like?'like':'pass'}">${s.like?'👍 Keep':'👎 Pass'}</span><div class="pconf">${Math.round(s.conf*100)}% sure</div></div><div class="pact"><button class="pset keep" data-i="${idx}" title="Rate this Keep (5★)">👍</button><button class="pset pass" data-i="${idx}" title="Rate this Pass (1★)">👎</button></div></div>`;}).join('');
+  grid.querySelectorAll('.pset').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();const i=+btn.dataset.i;const o=show[i][0];setRating(o.f,btn.classList.contains('keep')?5:1);bCounts&&bCounts();counts&&counts();syncCard&&syncCard(o.f);bSyncCard&&bSyncCard(o.f);renderPredict();});
   grid.querySelectorAll('.pc,.pi').forEach(el=>el.onclick=()=>{const i=+el.closest('.prow').dataset.i;const o=show[i][0];predSrc==='bk'?openBlink(o):openBook(o);});
 }
 document.getElementById('mPredict').onclick=()=>{setMode('predict');try{location.hash='predict'}catch(e){}};
