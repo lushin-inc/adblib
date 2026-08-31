@@ -760,30 +760,45 @@ function reasonText(f,rate){const r=Math.round(rate*100);if(!f)return '';
   if(f.indexOf('tb=')===0||f.indexOf('ta=')===0)return 'titles with “'+f.slice(3)+'” · '+r+'%';
   return '';}
 let _predList=[];
+let _predShow=[],_predHist=[];
+function _bthumbP(o){return o.cid?`<img src="${BTHUMB(o.cid,200)}" loading="lazy" referrerpolicy="no-referrer" alt="">`:'';}
+function _abcovP(o){return (o.d||o.c)?`<img src="${o.d||('covers/'+o.id+'.jpg')}" loading="lazy" alt="">`:'';}
+function predRowHTML(idx){const o=_predShow[idx][0],s=_predShow[idx][1],cov=predSrc==='bk'?_bthumbP(o):_abcovP(o);
+  return `<div class="prow" data-i="${idx}"><div class="pc">${cov}</div><div class="pi"><div class="pt">${esc(o.t)}</div>${(predSrc==='bk'&&o.s)?`<div class="psub">${esc(o.s)}</div>`:''}<div class="pa">${esc(o.a||'')}</div><div class="prsn">${esc(reasonText(s.reason,s.rrate))}</div></div><div class="pverd"><span class="pbadge ${s.like?'like':'pass'}">${s.like?'👍 Keep':'👎 Pass'}</span><div class="pconf">${Math.round(s.conf*100)}% sure</div></div><div class="pact"><button class="pset nownote" data-i="${idx}" data-k="nownote" title="Now + note “now”">⭐📝</button><button class="pset now" data-i="${idx}" data-k="now" title="Now">⭐</button><button class="pset keep" data-i="${idx}" data-k="keep" title="Keep (5★)">👍</button><button class="pset del" data-i="${idx}" data-k="delete" title="Delete">✕</button></div></div>`;}
+function _predCount(base){const c=document.getElementById('pcount');if(base!=null){c.textContent=base;}else{c.textContent=_predList.length+' predictions left'+(_predHist.length?' · press Z to undo':'');}}
+function wirePredRow(row){row.querySelectorAll('.pset').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();_predAct(+btn.dataset.i,btn.dataset.k);});
+  row.querySelectorAll('.pc,.pi').forEach(el=>el.onclick=()=>{const i=+row.dataset.i;const o=_predShow[i][0];predSrc==='bk'?openBlink(o):openBook(o);});}
+function _predAct(idx,kind){const o=_predShow[idx][0],f=o.f;
+  _predHist.push({idx,f,prev:ratings[f]?JSON.parse(JSON.stringify(ratings[f])):null});
+  predSet(f,kind);bCounts&&bCounts();counts&&counts();syncCard&&syncCard(f);bSyncCard&&bSyncCard(f);
+  const row=document.querySelector('#pgrid .prow[data-i="'+idx+'"]');if(row)row.remove();
+  _predList=_predList.filter(p=>p[0].f!==f);_predCount();}
+function predUndo(){if(!_predHist.length)return;const hh=_predHist.pop();
+  if(hh.prev)ratings[hh.f]=hh.prev;else delete ratings[hh.f];save();
+  bCounts&&bCounts();counts&&counts();syncCard&&syncCard(hh.f);bSyncCard&&bSyncCard(hh.f);
+  const grid=document.getElementById('pgrid');const tmp=document.createElement('div');tmp.innerHTML=predRowHTML(hh.idx);const row=tmp.firstChild;grid.insertBefore(row,grid.firstChild);wirePredRow(row);
+  _predList.unshift(_predShow[hh.idx]);_predCount();window.scrollTo(0,0);}
 function renderPredict(){
+  _predHist=[];
   const M=buildModel();const pempty=document.getElementById('pempty'),grid=document.getElementById('pgrid');
   if(M.lab.length<10){pempty.classList.remove('hidden');pempty.textContent='Rate at least ~10 '+(predSrc==='bk'?'Blinkist':'audiobook')+' books first.';grid.innerHTML='';document.getElementById('pnote').textContent='';document.getElementById('pcount').textContent='';return;}
   pempty.classList.add('hidden');const acc=looAcc(M);
-  document.getElementById('pnote').innerHTML='Trained on your <b>'+M.lab.length+'</b> rated '+(predSrc==='bk'?'Blinkist':'audiobook')+' books, plus authors you rated in the other library ('+(predSrc==='bk'?M.abN+' audiobooks':M.bkN+' Blinkist')+' carry across). Agrees with your own picks <b>'+Math.round(acc*100)+'%</b> of the time — sharpest up top. Keyboard: <b>4</b> ⭐+note · <b>3</b> ⭐ Now · <b>2</b> 👍 Keep · <b>1</b> ✕ Delete.';
+  document.getElementById('pnote').innerHTML='Trained on your <b>'+M.lab.length+'</b> rated '+(predSrc==='bk'?'Blinkist':'audiobook')+' books, plus authors you rated in the other library ('+(predSrc==='bk'?M.abN+' audiobooks':M.bkN+' Blinkist')+' carry across). Agrees with your own picks <b>'+Math.round(acc*100)+'%</b> of the time — sharpest up top. Keyboard: <b>4</b> ⭐+note · <b>3</b> ⭐ Now · <b>2</b> 👍 Keep · <b>1</b> ✕ Delete · <b>Z</b> undo.';
   const A=predArr();const preds=[];
   for(const o of A){if(predLabel(o.f)!==null)continue;if(getR(o.f)||getD(o.f)||getP(o.f))continue;preds.push([o,scoreBook(o,M)]);}
   preds.sort((a,b)=>b[1].conf-a[1].conf);
   const filt=preds.filter(([o,s])=>s.conf>=predConf&&(predV===''||(predV==='1')===s.like));_predList=filt;
-  const CAP=400,show=filt.slice(0,CAP);
-  document.getElementById('pcount').textContent=filt.length+' predictions'+(filt.length>CAP?' (showing top '+CAP+')':'');
-  const bthumb=(o)=>o.cid?`<img src="${BTHUMB(o.cid,200)}" loading="lazy" referrerpolicy="no-referrer" alt="">`:'';
-  const abcov=(o)=>(o.d||o.c)?`<img src="${o.d||('covers/'+o.id+'.jpg')}" loading="lazy" alt="">`:'';
-  grid.innerHTML=show.map((row,idx)=>{const o=row[0],s=row[1],cov=predSrc==='bk'?bthumb(o):abcov(o);
-    return `<div class="prow" data-i="${idx}"><div class="pc">${cov}</div><div class="pi"><div class="pt">${esc(o.t)}</div>${(predSrc==='bk'&&o.s)?`<div class="psub">${esc(o.s)}</div>`:''}<div class="pa">${esc(o.a||'')}</div><div class="prsn">${esc(reasonText(s.reason,s.rrate))}</div></div><div class="pverd"><span class="pbadge ${s.like?'like':'pass'}">${s.like?'👍 Keep':'👎 Pass'}</span><div class="pconf">${Math.round(s.conf*100)}% sure</div></div><div class="pact"><button class="pset nownote" data-i="${idx}" data-k="nownote" title="Now + note “now”">⭐📝</button><button class="pset now" data-i="${idx}" data-k="now" title="Now">⭐</button><button class="pset keep" data-i="${idx}" data-k="keep" title="Keep (5★)">👍</button><button class="pset del" data-i="${idx}" data-k="delete" title="Delete">✕</button></div></div>`;}).join('');
-  grid.querySelectorAll('.pset').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();const i=+btn.dataset.i;const o=show[i][0];predSet(o.f,btn.dataset.k);bCounts&&bCounts();counts&&counts();syncCard&&syncCard(o.f);bSyncCard&&bSyncCard(o.f);const row=btn.closest('.prow');if(row)row.remove();_predList=_predList.filter(p=>p[0].f!==o.f);document.getElementById('pcount').textContent=_predList.length+' predictions left';});
-  grid.querySelectorAll('.pc,.pi').forEach(el=>el.onclick=()=>{const i=+el.closest('.prow').dataset.i;const o=show[i][0];predSrc==='bk'?openBlink(o):openBook(o);});
+  const CAP=400;_predShow=filt.slice(0,CAP);
+  grid.innerHTML=_predShow.map((row,idx)=>predRowHTML(idx)).join('');
+  grid.querySelectorAll('.prow').forEach(wirePredRow);
+  _predCount(filt.length+' predictions'+(filt.length>CAP?' (showing top '+CAP+')':''));
 }
 document.getElementById('mPredict').onclick=()=>{setMode('predict');try{location.hash='predict'}catch(e){}};
 document.getElementById('psrc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.s===predSrc)return;predSrc=b.dataset.s;document.querySelectorAll('#psrc button').forEach(x=>x.classList.toggle('on',x.dataset.s===predSrc));renderPredict();});
 document.querySelectorAll('#predict .pchip.conf').forEach(c=>c.onclick=()=>{predConf=parseFloat(c.dataset.conf);document.querySelectorAll('#predict .pchip.conf').forEach(x=>x.classList.toggle('on',x===c));renderPredict();});
 document.querySelectorAll('#predict .pchip.pv').forEach(c=>c.onclick=()=>{predV=c.dataset.v;document.querySelectorAll('#predict .pchip.pv').forEach(x=>x.classList.toggle('on',x===c));renderPredict();});
 document.getElementById('pbulk').onclick=()=>{if(!_predList.length)return;const n=_predList.length;if(!confirm('Accept '+n+' predicted ratings? You can change any later.'))return;_predList.forEach(([o,s])=>setRating(o.f,s.like?5:1));bCounts&&bCounts();counts&&counts();renderPredict();};
-document.addEventListener('keydown',e=>{if(document.getElementById('app').classList.contains('hidden'))return;if(mode!=='predict')return;if(document.activeElement&&(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='SELECT'))return;const map={'1':'delete','2':'keep','3':'now','4':'nownote'};const kind=map[e.key];if(!kind)return;const row=document.querySelector('#pgrid .prow');if(!row)return;e.preventDefault();const btn=row.querySelector('.pset[data-k="'+kind+'"]');if(btn)btn.click();});
+document.addEventListener('keydown',e=>{if(document.getElementById('app').classList.contains('hidden'))return;if(mode!=='predict')return;if(document.activeElement&&(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='SELECT'))return;if(e.key==='z'||e.key==='Z'){e.preventDefault();predUndo();return;}const map={'1':'delete','2':'keep','3':'now','4':'nownote'};const kind=map[e.key];if(!kind)return;const row=document.querySelector('#pgrid .prow');if(!row)return;e.preventDefault();const btn=row.querySelector('.pset[data-k="'+kind+'"]');if(btn)btn.click();});
 
 ri=firstUnrated();if(ri<0)ri=RARR().length;
 if(ok)unlock();
