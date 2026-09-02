@@ -843,7 +843,7 @@ function r2Get(f){return r2[f]||0;}
 function r2Set(f,t){if(t)r2[f]=t;else delete r2[f];r2save();}
 let r2Src='bk',r2Filter='',_r2M=null;
 function r2Arr(){return r2Src==='bk'?BLINKIST:BOOKS;}
-function r2Pool(){return r2Arr().filter(o=>getR(o.f)===5);}
+function r2Pool(){return r2Arr().filter(o=>{const v=ratings[o.f];return v&&typeof v.note==='string'&&v.note.trim().toLowerCase()==='now';});}
 function r2Feats(o,lib){const fs=[];if(lib==='bk'){if(o.fo)fs.push('fo='+o.fo);}else{(o.tg||[]).forEach(t=>fs.push('tg='+t));}const af=authFeatOf(o);if(af)fs.push(af);return fs;}
 function r2Model(){const lib=r2Src,A=r2Pool(),other=lib==='bk'?BOOKS:BLINKIST;
   const fc={},fcount={},cc={},feat={},lab=[];R2_KEYS.forEach(k=>{fc[k]={};fcount[k]=0;cc[k]=0;});
