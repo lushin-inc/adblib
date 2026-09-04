@@ -315,28 +315,27 @@ a.cover:hover{transform:translateY(-3px)}
   <div class="prog"><div class="pwrap"><div class="pbar" id="pbar"></div></div><span class="ptext" id="ptext"></span><input id="jin" class="jin" type="number" min="1" placeholder="#" title="Jump to book #"><button class="sb" onclick="jumpNum()">Go</button><button class="sb" id="expBtn">Export</button></div>
   <div class="swipearea">
     <div class="rcard scard" id="scard">
-      <div class="stamp like" id="stampLike">LIKE</div>
-      <div class="stamp nope" id="stampNope">NOPE</div>
-      <div class="stamp now" id="stampNow">NOW</div>
-      <div class="stamp del" id="stampDelete">DELETE</div>
+      <div class="stamp like" id="stampLike">1ST</div>
+      <div class="stamp nope" id="stampNope">LIST</div>
+      <div class="stamp now" id="stampNow">2ND</div>
+      <div class="stamp del" id="stampDelete">3RD</div>
       <div class="rcover" id="rcover"><span id="rcoverT"></span></div>
       <div class="rinfo"><div class="rname" id="rname"></div><div class="rauth" id="rauth"></div><div class="rlink" id="rlink"></div></div>
       <div class="rnoteflag" id="rnoteflag"></div>
     </div>
   </div>
   <div class="swipebtns">
-    <button class="sbtn nope" onclick="flingAndRate(-1)" title="Pass (left arrow)">✕</button>
-    <button class="sbtn undo" onclick="undoSwipe()" title="Undo (Z)">↩</button>
-    <button class="sbtn note" onclick="startNote()" title="Note (N)">📝</button>
-    <button class="sbtn del" onclick="flingDown()" title="Delete (down arrow / D)">🗑</button>
-    <button class="sbtn now" onclick="flingUp()" title="Now / priority (up arrow)">⭐</button>
-    <button class="sbtn like" onclick="flingAndRate(1)" title="Like (right arrow)">♥</button>
+    <button class="sbtn nope" onclick="flingAndRate(-1)" title="List (left arrow / 1)">👍</button>
+    <button class="sbtn del" onclick="flingDown()" title="Third (down arrow / 2)">⭐️</button>
+    <button class="sbtn undo" onclick="undoSwipe()" title="Undo (Z / 5)">↩</button>
+    <button class="sbtn now" onclick="flingUp()" title="Second (up arrow / 3)">⏭️</button>
+    <button class="sbtn like" onclick="flingAndRate(1)" title="First (right arrow / 4)">🔥</button>
   </div>
   <div class="rinput" id="rinput" style="max-width:400px;margin:8px auto 0"><input id="rin" placeholder='Add a note...'><div class="tip">Enter to save · Esc to cancel</div></div>
-  <div class="rhint">Swipe · ← pass · like → · ↑ Now · ↓ delete · N note · Z undo</div>
-  <div class="done" id="done"><h1>🎧 All done</h1><p>You've been through every book.</p><p>Hit Export and send me the file — I'll pull download links for your likes.</p>
-    <div class="dstats" id="dstats"></div><button class="dbtn" id="expBtn2">Export ratings</button><button class="dbtn ghost" onclick="jumpTo(0)">Start over from #1</button></div>
-</div>
+  <div class="rhint">Swipe · → 🔥 First · ↑ ⏭️ Second · ↓ ⭐️ Third · ← 👍 List · Z undo</div>
+  <div class="done" id="done"><h1>🏆 All ranked</h1><p>You’ve been through every book in this list.</p>
+    <div class="dstats" id="dstats"></div><button class="dbtn" id="expBtn2">Export Round 2</button><button class="dbtn ghost" onclick="jumpTo(0)">Start over from #1</button></div>
+  </div>
 </div>
 <div id="blink" class="hidden"><main><div class="grid" id="bgrid"></div><div class="empty hidden" id="bempty">Nothing here.</div></main></div>
 
@@ -455,7 +454,7 @@ function setMode(m){mode=m;patternSel='';
   else refreshBrowseStars();}
 document.getElementById('mBrowse').onclick=()=>{active.clear();topicSel='';patternSel='';document.getElementById('topic').value='';document.getElementById('q').value='';syncChips();setMode('browse');applyFilter();try{location.hash=''}catch(e){}};
 document.getElementById('mAuthors').onclick=()=>{setMode('authors');try{location.hash='authors'}catch(e){}};
-document.getElementById('mRate').onclick=()=>{setMode('rate');try{location.hash='rate'}catch(e){}};
+document.getElementById('mRate').onclick=()=>{ri=firstUnrated();if(ri<0)ri=RARR().length;setMode('rate');try{location.hash='rate'}catch(e){}};
 document.getElementById('mTrends').onclick=()=>{setMode('trends');try{location.hash='trends'}catch(e){}};
 
 /* ---------- trends ---------- */
@@ -615,12 +614,13 @@ function backFromDetail(){document.getElementById('detail').classList.add('hidde
 function syncCard(f){const c=cards.find(c=>c._b.f===f);if(c)paintCard(c);}
 
 /* ---------- rate (swipe deck) ---------- */
-let ri=0,history=[],rateSrc='ab';
-function RARR(){return rateSrc==='bk'?BLINKIST:BOOKS;}
+let ri=0,history=[],rateSrc='bk';
+function rateNow(o){const v=ratings[o.f];return !!(v&&typeof v.note==='string'&&v.note.trim().toLowerCase()==='now');}
+function RARR(){return (rateSrc==='bk'?BLINKIST:BOOKS).filter(rateNow);}
 function rCoverInner(b){if(rateSrc==='bk')return b.cid?`<img src="${BTHUMB(b.cid,600)}" referrerpolicy="no-referrer" alt="">`:null;return (b.d||b.c)?`<img src="${b.d||("covers/"+b.id+".jpg")}" alt="">`:null;}
-function ratedCount(){return RARR().filter(b=>getR(b.f)||getD(b.f)).length}
-function firstUnrated(){const A=RARR();for(let i=0;i<A.length;i++)if(!getR(A[i].f)&&!getD(A[i].f))return i;return -1}
-function nextUnrated(i){const A=RARR();for(let j=i+1;j<A.length;j++)if(!getR(A[j].f)&&!getD(A[j].f))return j;for(let j=0;j<=i;j++)if(!getR(A[j].f)&&!getD(A[j].f))return j;return -1;}
+function ratedCount(){return RARR().filter(b=>r2Get(b.f)).length}
+function firstUnrated(){const A=RARR();for(let i=0;i<A.length;i++)if(!r2Get(A[i].f))return i;return -1}
+function nextUnrated(i){const A=RARR();for(let j=i+1;j<A.length;j++)if(!r2Get(A[j].f))return j;for(let j=0;j<=i;j++)if(!r2Get(A[j].f))return j;return -1;}
 function jumpTo(i){ri=i;renderRater();}
 function jumpNum(){const el=document.getElementById('jin');const v=parseInt(el.value,10);if(v>=1&&v<=RARR().length){ri=v-1;renderRater();el.blur();}else{el.value='';}}
 document.getElementById('jin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')jumpNum();});
@@ -630,8 +630,8 @@ function renderRater(){closeNote();
   document.getElementById('pbar').style.width=(100*n/A.length)+'%';document.getElementById('ptext').textContent=n+' / '+A.length;
   const done=document.getElementById('done'),card=document.getElementById('scard'),hint=document.querySelector('.rhint'),btns=document.querySelector('.swipebtns');
   if(ri<0||ri>=A.length){card.style.display='none';hint.style.display='none';btns.style.display='none';done.style.display='block';
-    let liked=0,passed=0,notes=0,nowc=0,delc=0;A.forEach(b=>{const r=getR(b.f);if(r>=4)liked++;else if(r>0)passed++;if(getN(b.f))notes++;if(getP(b.f))nowc++;if(getD(b.f))delc++;});
-    document.getElementById('dstats').innerHTML=`<div class="dstat"><div class="v" style="color:var(--r5)">${liked}</div><div class="l">Liked</div></div><div class="dstat"><div class="v" style="color:var(--r1)">${passed}</div><div class="l">Passed</div></div><div class="dstat"><div class="v" style="color:var(--star)">${nowc}</div><div class="l">Now</div></div><div class="dstat"><div class="v">${notes}</div><div class="l">Notes</div></div><div class="dstat"><div class="v" style="color:var(--r1)">${delc}</div><div class="l">Delete</div></div>`;
+    let c1=0,c2=0,c3=0,c4=0;A.forEach(b=>{const t=r2Get(b.f);if(t===4)c4++;else if(t===3)c3++;else if(t===2)c2++;else if(t===1)c1++;});
+    document.getElementById('dstats').innerHTML=`<div class="dstat"><div class="v" style="color:#ff6b3d">${c4}</div><div class="l">🔥 First</div></div><div class="dstat"><div class="v" style="color:var(--star)">${c3}</div><div class="l">⏭️ Second</div></div><div class="dstat"><div class="v" style="color:#8b9cff">${c2}</div><div class="l">⭐️ Third</div></div><div class="dstat"><div class="v" style="color:var(--muted)">${c1}</div><div class="l">👍 List</div></div>`;
     return;}
   card.style.display='block';hint.style.display='block';btns.style.display='flex';done.style.display='none';
   resetCard();
@@ -646,15 +646,15 @@ function renderRater(){closeNote();
   const nf=document.getElementById('rnoteflag'),note=getN(b.f);if(note){nf.style.display='block';nf.textContent='\U0001F4DD '+note}else nf.style.display='none';
 }
 function resetCard(){const c=document.getElementById('scard');c.style.transition='none';c.style.transform='';c.style.opacity='1';document.getElementById('stampLike').style.opacity=0;document.getElementById('stampNope').style.opacity=0;document.getElementById('stampDelete').style.opacity=0;}
-function applyAction(b,act){history.push({i:ri,f:b.f,prev:ratings[b.f]?JSON.parse(JSON.stringify(ratings[b.f])):null});ratings[b.f]=ratings[b.f]||{};if(act==='pass'){ratings[b.f].r=1;delete ratings[b.f].p;}else if(act==='like'){ratings[b.f].r=5;delete ratings[b.f].p;}else if(act==='super'){ratings[b.f].r=5;ratings[b.f].p=1;delete ratings[b.f].d;}else if(act==='delete'){ratings[b.f].d=1;delete ratings[b.f].r;delete ratings[b.f].p;}if(act!=='delete')delete ratings[b.f].d;if(!ratings[b.f].r&&!ratings[b.f].note&&!ratings[b.f].p&&!ratings[b.f].d)delete ratings[b.f];save();syncCard(b.f);if(typeof bSyncCard==='function')bSyncCard(b.f);}
+function applyAction(o,tier){history.push({i:ri,f:o.f,prev:r2[o.f]||0});r2Set(o.f,tier);}
 function advance(){const nx=nextUnrated(ri);ri=(nx!==-1)?nx:RARR().length;renderRater();}
-function applyRating(dir){applyAction(RARR()[ri],dir>0?'like':'pass');advance();}
-function applySuper(){applyAction(RARR()[ri],'super');advance();}
+function applyRating(dir){applyAction(RARR()[ri],dir>0?4:1);advance();}
+function applySuper(){applyAction(RARR()[ri],3);advance();}
 function flingAndRate(dir){if(ri<0||ri>=RARR().length)return;const c=document.getElementById('scard');c.style.transition='transform .26s ease, opacity .26s ease';c.style.transform=`translate(${dir*700}px,0) rotate(${dir*20}deg)`;c.style.opacity='0';(dir>0?document.getElementById('stampLike'):document.getElementById('stampNope')).style.opacity=1;setTimeout(()=>applyRating(dir),230);}
 function flingUp(){if(ri<0||ri>=RARR().length)return;const c=document.getElementById('scard');c.style.transition='transform .28s ease, opacity .28s ease';c.style.transform='translate(0,-820px)';c.style.opacity='0';document.getElementById('stampNow').style.opacity=1;setTimeout(applySuper,240);}
 function flingDown(){if(ri<0||ri>=RARR().length)return;const c=document.getElementById('scard');c.style.transition='transform .28s ease, opacity .28s ease';c.style.transform='translate(0,820px)';c.style.opacity='0';document.getElementById('stampDelete').style.opacity=1;setTimeout(applyDelete,240);}
-function applyDelete(){applyAction(RARR()[ri],'delete');advance();}
-function undoSwipe(){if(!history.length)return;const h=history.pop();if(h.prev)ratings[h.f]=h.prev;else delete ratings[h.f];save();ri=h.i;renderRater();syncCard(h.f);if(typeof bSyncCard==='function')bSyncCard(h.f);}
+function applyDelete(){applyAction(RARR()[ri],2);advance();}
+function undoSwipe(){if(!history.length)return;const hh=history.pop();if(hh.prev)r2[hh.f]=hh.prev;else delete r2[hh.f];r2save();ri=hh.i;renderRater();}
 (function(){
   const c=document.getElementById('scard');let sx=0,sy=0,dragging=false,dx=0,dy=0;
   const like=document.getElementById('stampLike'),nope=document.getElementById('stampNope'),now=document.getElementById('stampNow'),del=document.getElementById('stampDelete');
@@ -673,13 +673,13 @@ function closeNote(){const r=document.getElementById('rinput');if(r)r.style.disp
 function commitNote(){const b=RARR()[ri],val=document.getElementById('rin').value.trim();ratings[b.f]=ratings[b.f]||{};if(val)ratings[b.f].note=val;else delete ratings[b.f].note;if(!ratings[b.f].r&&!ratings[b.f].note)delete ratings[b.f];save();closeNote();renderRater();syncCard(b.f);if(typeof bSyncCard==='function')bSyncCard(b.f);}
 document.getElementById('rin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')commitNote();else if(e.key==='Escape')closeNote();});
 document.addEventListener('keydown',e=>{if(document.getElementById('app').classList.contains('hidden'))return;if(document.activeElement&&document.activeElement.tagName==='INPUT')return;if(mode!=='rate')return;
-  if(e.key==='ArrowRight'){e.preventDefault();flingAndRate(1);}else if(e.key==='ArrowLeft'){e.preventDefault();flingAndRate(-1);}else if(e.key==='ArrowUp'){e.preventDefault();flingUp();}else if(e.key==='ArrowDown'||e.key.toLowerCase()==='d'){e.preventDefault();flingDown();}else if(e.key.toLowerCase()==='n'){e.preventDefault();startNote();}else if(e.key.toLowerCase()==='z'){e.preventDefault();undoSwipe();}});
+  if(e.key==='ArrowRight'||e.key==='4'){e.preventDefault();flingAndRate(1);}else if(e.key==='ArrowUp'||e.key==='3'){e.preventDefault();flingUp();}else if(e.key==='ArrowDown'||e.key==='2'){e.preventDefault();flingDown();}else if(e.key==='ArrowLeft'||e.key==='1'){e.preventDefault();flingAndRate(-1);}else if(e.key==='5'||e.key.toLowerCase()==='z'){e.preventDefault();undoSwipe();}});
 function csvEsc(s){s=String(s==null?'':s);return (s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;}
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;a.click();}
 function exportAll(){const bk=rateSrc==='bk',A=RARR();const head=bk?['File','Title','Author','Category','Rating','Priority','Delete','Note']:['File','Title','Author','Rating','Priority','Delete','Note'];const lines=[head.join(',')];const jj={};
   A.forEach(b=>{const r=getR(b.f),n=getN(b.f),pp=getP(b.f),dd=getD(b.f);if(r||n||pp||dd){jj[b.f]={r:r||undefined,p:pp?1:undefined,d:dd?1:undefined,note:n||undefined};lines.push((bk?[b.f,b.t,b.a,b.fo,r||'',pp?'Now':'',dd?'DELETE':'',n]:[b.f,b.t,b.a,r||'',pp?'Now':'',dd?'DELETE':'',n]).map(csvEsc).join(','));}});
   const pre=bk?'blinkist':'audiobook';download(pre+'_ratings.csv',lines.join('\n'),'text/csv');download(pre+'_ratings.json',JSON.stringify(jj,null,1),'application/json');}
-document.getElementById('expBtn').onclick=exportAll;document.getElementById('expBtn2').onclick=exportAll;
+document.getElementById('expBtn').onclick=r2Export;document.getElementById('expBtn2').onclick=r2Export;
 
 /* ---------- Blinkist ---------- */
 let bcards=[],bActive=new Set(),bcatSel='',bBuilt=false,bDetail=null;
